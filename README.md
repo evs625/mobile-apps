@@ -19,9 +19,13 @@ A build-free repository for small, modern HTML applications that work on phones 
 
 The calculator also has a native Android WebView shell under `android/calculator-wrapper/`. It loads the live GitHub Pages calculator in immersive full-screen mode with no browser interface. HTML/CSS/JavaScript changes are picked up from GitHub Pages without rebuilding the APK.
 
-The `Build calculator Android APK` workflow builds an installable debug APK and stores it as the `calculator-android-apk` workflow artifact. Open the workflow run, download the artifact, extract `calculator-webview.apk`, and allow installation from the app used to open the APK.
+The `Build calculator Android APK` workflow builds an installable APK, keeps the usual `calculator-android-apk` workflow artifact, and also publishes the latest APK through GitHub Pages at:
 
-The first launch requires internet access. After one successful load, the calculator's service worker provides an offline fallback.
+```text
+https://evs625.github.io/mobile-apps/downloads/calculator-webview.apk
+```
+
+The calculator web page links directly to this file. The first launch requires internet access. After one successful load, the calculator's service worker provides an offline fallback.
 
 ## Run locally
 
