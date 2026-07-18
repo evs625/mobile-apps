@@ -5,55 +5,121 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#111827">
+  <meta name="description" content="A catalog of small, phone-first web applications.">
   <title>Mobile Apps</title>
   <style>
     :root {
       color-scheme: light dark;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f4f7fb;
-      color: #111827;
+      --page: #f4f7fb;
+      --surface: rgba(255, 255, 255, .84);
+      --surface-soft: rgba(255, 255, 255, .62);
+      --text: #111827;
+      --muted: #566174;
+      --line: rgba(148, 163, 184, .28);
+      --accent: #2563eb;
+      --tag: #e8eef8;
     }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       min-height: 100dvh;
-      padding: max(28px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+      padding: max(28px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
       background:
         radial-gradient(circle at top left, rgba(59, 130, 246, .18), transparent 32rem),
-        #f4f7fb;
+        var(--page);
+      color: var(--text);
     }
-    main { width: min(100%, 900px); margin: 0 auto; }
-    .eyebrow { margin: 0 0 10px; color: #2563eb; font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+
+    main { width: min(100%, 920px); margin: 0 auto; }
+    .eyebrow { margin: 0 0 10px; color: var(--accent); font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
     h1 { margin: 0; font-size: clamp(2rem, 8vw, 4rem); line-height: .98; letter-spacing: -.055em; }
-    .intro { max-width: 640px; margin: 20px 0 36px; color: #4b5563; font-size: 1.06rem; line-height: 1.65; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 18px; }
-    .card {
-      display: block;
-      padding: 24px;
-      border: 1px solid rgba(148, 163, 184, .28);
+    .intro { max-width: 680px; margin: 20px 0 36px; color: var(--muted); font-size: 1.06rem; line-height: 1.65; }
+    h2 { margin: 0; font-size: 1.45rem; }
+    h3 { margin: 0 0 8px; font-size: 1.04rem; }
+
+    .app-card {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 18px;
+      padding: 22px;
+      border: 1px solid var(--line);
       border-radius: 24px;
-      background: rgba(255, 255, 255, .82);
+      background: var(--surface);
       color: inherit;
       text-decoration: none;
       box-shadow: 0 18px 50px rgba(15, 23, 42, .08);
       backdrop-filter: blur(18px);
       transition: transform .18s ease, box-shadow .18s ease;
     }
-    .card:hover { transform: translateY(-3px); box-shadow: 0 22px 60px rgba(15, 23, 42, .13); }
-    .card:focus-visible { outline: 3px solid #2563eb; outline-offset: 4px; }
-    .icon { display: grid; place-items: center; width: 54px; height: 54px; margin-bottom: 34px; border-radius: 17px; background: #111827; color: white; font-size: 1.45rem; font-weight: 800; }
-    h2 { margin: 0 0 8px; font-size: 1.35rem; }
-    .card p { margin: 0; color: #64748b; line-height: 1.55; }
-    .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
-    .tag { padding: 6px 9px; border-radius: 999px; background: #e8eef8; color: #334155; font-size: .73rem; font-weight: 700; }
+
+    .app-card:hover { transform: translateY(-3px); box-shadow: 0 22px 60px rgba(15, 23, 42, .13); }
+    .app-card:focus-visible, .action:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    .icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 18px; background: #111827; color: white; font-size: 1.5rem; font-weight: 800; }
+    .app-copy p { margin: 7px 0 0; color: var(--muted); line-height: 1.5; }
+    .arrow { color: var(--muted); font-size: 1.5rem; }
+    .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .tag { padding: 6px 9px; border-radius: 999px; background: var(--tag); color: #334155; font-size: .73rem; font-weight: 700; }
+
+    .usage { margin-top: 38px; }
+    .usage-header { max-width: 690px; margin-bottom: 18px; }
+    .usage-header p { margin: 9px 0 0; color: var(--muted); line-height: 1.6; }
+    .option-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .option {
+      display: flex;
+      flex-direction: column;
+      min-height: 230px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--surface-soft);
+      backdrop-filter: blur(14px);
+    }
+    .number { display: grid; place-items: center; width: 30px; height: 30px; margin-bottom: 22px; border-radius: 10px; background: var(--tag); color: #334155; font-size: .78rem; font-weight: 800; }
+    .option p { margin: 0; color: var(--muted); line-height: 1.55; font-size: .92rem; }
+    .action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      margin-top: auto;
+      padding: 0 14px;
+      border-radius: 13px;
+      background: #111827;
+      color: white;
+      font-size: .86rem;
+      font-weight: 750;
+      text-decoration: none;
+    }
+    .instruction { margin-top: auto; padding-top: 18px; color: var(--text); font-size: .84rem; font-weight: 700; line-height: 1.45; }
+    .same-app { margin: 18px 0 0; padding: 15px 17px; border-left: 3px solid var(--accent); border-radius: 0 13px 13px 0; background: rgba(37, 99, 235, .08); color: var(--muted); line-height: 1.55; }
+
+    @media (max-width: 720px) {
+      .option-grid { grid-template-columns: 1fr; }
+      .option { min-height: 190px; }
+    }
+
+    @media (max-width: 480px) {
+      .app-card { grid-template-columns: auto 1fr; }
+      .arrow { display: none; }
+    }
+
     @media (prefers-color-scheme: dark) {
-      :root { background: #080d18; color: #f8fafc; }
-      body { background: radial-gradient(circle at top left, rgba(59, 130, 246, .18), transparent 32rem), #080d18; }
-      .intro { color: #a6b1c2; }
-      .card { background: rgba(15, 23, 42, .78); border-color: rgba(148, 163, 184, .18); }
-      .card p { color: #9aa8bc; }
-      .icon { background: #f8fafc; color: #111827; }
-      .tag { background: #182338; color: #cbd5e1; }
+      :root {
+        --page: #080d18;
+        --surface: rgba(15, 23, 42, .80);
+        --surface-soft: rgba(15, 23, 42, .62);
+        --text: #f8fafc;
+        --muted: #a6b1c2;
+        --line: rgba(148, 163, 184, .18);
+        --tag: #182338;
+      }
+      .icon, .action { background: #f8fafc; color: #111827; }
+      .tag, .number { color: #cbd5e1; }
+      .same-app { background: rgba(59, 130, 246, .10); }
     }
   </style>
 </head>
@@ -61,19 +127,52 @@
   <main>
     <p class="eyebrow">Mobile Apps Creator</p>
     <h1>Small apps.<br>Ready to use.</h1>
-    <p class="intro">A catalog of static, phone-first applications that can run locally, install as web apps, or be shared through GitHub Pages.</p>
+    <p class="intro">Each application is a live web app. You can open it normally, install it as a PWA, or load the same URL in a lightweight wrapper.</p>
 
-    <section class="grid" aria-label="Available applications">
-      <a class="card" href="./apps/calculator/">
-        <span class="icon" aria-hidden="true">±</span>
+    <a class="app-card" href="./apps/calculator/">
+      <span class="icon" aria-hidden="true">±</span>
+      <span class="app-copy">
         <h2>Calculator</h2>
-        <p>A focused four-function calculator with keyboard support and offline installation.</p>
+        <p>A focused four-function calculator with keyboard support and offline caching.</p>
         <span class="meta">
           <span class="tag">PWA</span>
-          <span class="tag">Offline</span>
+          <span class="tag">Offline after first load</span>
           <span class="tag">No dependencies</span>
         </span>
-      </a>
+      </span>
+      <span class="arrow" aria-hidden="true">→</span>
+    </a>
+
+    <section class="usage" aria-labelledby="usage-title">
+      <div class="usage-header">
+        <h2 id="usage-title">Ways to use the calculator</h2>
+        <p>These do not install different calculator versions. They all load the same GitHub Pages application; only the window used to launch it changes.</p>
+      </div>
+
+      <div class="option-grid">
+        <article class="option">
+          <span class="number">1</span>
+          <h3>Regular web page</h3>
+          <p>Nothing to install. Browser controls remain visible. Best for opening a shared link or testing changes immediately.</p>
+          <a class="action" href="./apps/calculator/">Open calculator</a>
+        </article>
+
+        <article class="option">
+          <span class="number">2</span>
+          <h3>Installed PWA</h3>
+          <p>Creates a launcher icon and opens in a standalone window. The calculator remains the same live site and works offline after it has loaded once.</p>
+          <p class="instruction">Open it in Chrome, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+        </article>
+
+        <article class="option">
+          <span class="number">3</span>
+          <h3>Lightweight wrapper</h3>
+          <p>Use the calculator URL in Native Alpha or another wrapper when you want no normal browser interface without building a separate APK.</p>
+          <p class="instruction">Wrapper URL:<br><strong>evs625.github.io/mobile-apps/apps/calculator/</strong></p>
+        </article>
+      </div>
+
+      <p class="same-app"><strong>Main distinction:</strong> browser page, installed PWA, and wrapper are three launch methods for one application—not separate builds with different calculator functionality.</p>
     </section>
   </main>
 </body>
