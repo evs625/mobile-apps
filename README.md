@@ -4,7 +4,7 @@ A build-free repository for small, modern HTML applications that work on phones 
 
 ## Repository model
 
-- `index.html` — catalog of available applications.
+- `index.html` — catalog of available applications and usage instructions.
 - `apps/<app-name>/` — one self-contained application per folder.
 - `tests/` — dependency-free unit tests for reusable application logic.
 - `.github/workflows/deploy-pages.yml` — GitHub Pages deployment workflow.
@@ -15,17 +15,17 @@ A build-free repository for small, modern HTML applications that work on phones 
 
 - [Calculator](./apps/calculator/) — responsive, keyboard-accessible, installable PWA with offline support.
 
-## Android full-screen wrapper
+## Ways to use an app
 
-The calculator also has a native Android WebView shell under `android/calculator-wrapper/`. It loads the live GitHub Pages calculator in immersive full-screen mode with no browser interface. HTML/CSS/JavaScript changes are picked up from GitHub Pages without rebuilding the APK.
+The repository publishes one live web application. The following are launch methods for the same code, not separate application versions:
 
-The `Build calculator Android APK` workflow builds an installable APK, keeps the usual `calculator-android-apk` workflow artifact, and also publishes the latest APK through GitHub Pages at:
+1. **Regular browser page** — no installation; browser controls remain visible.
+2. **Installed PWA** — launcher icon, standalone window, automatic web updates, and offline use after the first successful load.
+3. **Lightweight web wrapper** — load the same GitHub Pages URL in Native Alpha or a similar wrapper to remove the normal browser interface without maintaining a separate APK.
 
-```text
-https://evs625.github.io/mobile-apps/downloads/calculator-webview.apk
-```
+## Android wrapper experiment
 
-The calculator web page links directly to this file. The first launch requires internet access. After one successful load, the calculator's service worker provides an offline fallback.
+The earlier native Android WebView prototype remains under `android/calculator-wrapper/` for possible future investigation. It is currently archived and unsupported after an on-device startup crash was reported. No APK is built or published by this repository.
 
 ## Run locally
 
