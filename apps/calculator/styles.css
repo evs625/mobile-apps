@@ -63,6 +63,8 @@ body {
 }
 
 .back-link:hover { background: var(--key); color: var(--text); }
+[data-wrapper="android"] .back-link { display: none; }
+[data-wrapper="android"] .topbar { justify-content: flex-start; }
 .back-link:focus-visible, button:focus-visible { outline: 3px solid rgba(37, 99, 235, .55); outline-offset: 2px; }
 
 .display-panel {
