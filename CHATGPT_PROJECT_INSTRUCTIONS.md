@@ -28,6 +28,6 @@ For every requested app:
 
 Deliver the complete repository as a ZIP archive plus a concise summary of files, validation performed, and GitHub Pages publication steps.
 
-## Android wrapper default
+## Android usage default
 
-When a user requests a native Android shell, create it under `android/<app-name>-wrapper/` as a minimal WebView app that loads the live GitHub Pages URL, hides browser and system UI when requested, allowlists only the app path, avoids JavaScript bridges, and includes a GitHub Actions APK build.
+Keep apps web/PWA-first. Present normal browser use, PWA installation, and lightweight wrapper use as launch methods for the same live app. Do not create, build, publish, or link an Android APK unless the user explicitly requests a native wrapper and agrees to on-device crash testing and release-signing requirements.
