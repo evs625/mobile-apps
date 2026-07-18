@@ -1,0 +1,11 @@
+{
+  "name": "mobile-apps-repo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

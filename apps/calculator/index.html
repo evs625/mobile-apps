@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#eef2f7" media="(prefers-color-scheme: light)">
+  <meta name="description" content="A fast, installable calculator designed for mobile devices.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Calculator">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Calculator</title>
+</head>
+<body>
+  <main class="app-shell" aria-label="Calculator">
+    <header class="topbar">
+      <span class="brand">Calculator</span>
+      <a class="back-link" href="../../" aria-label="Back to app catalog" title="Back to app catalog">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </header>
+
+    <section class="display-panel" aria-label="Display">
+      <div class="expression" data-expression>Ready</div>
+      <output class="result" data-display aria-live="off">0</output>
+      <div class="sr-only" data-live aria-live="polite"></div>
+    </section>
+
+    <section class="keypad" data-keypad aria-label="Calculator keypad">
+      <button type="button" class="utility" data-action="clear" aria-label="Clear">C</button>
+      <button type="button" class="utility" data-action="sign" aria-label="Toggle positive or negative">±</button>
+      <button type="button" class="utility" data-action="percent" aria-label="Percent">%</button>
+      <button type="button" class="operator" data-action="operator" data-value="/" aria-label="Divide">÷</button>
+
+      <button type="button" data-action="digit" data-value="7">7</button>
+      <button type="button" data-action="digit" data-value="8">8</button>
+      <button type="button" data-action="digit" data-value="9">9</button>
+      <button type="button" class="operator" data-action="operator" data-value="*" aria-label="Multiply">×</button>
+
+      <button type="button" data-action="digit" data-value="4">4</button>
+      <button type="button" data-action="digit" data-value="5">5</button>
+      <button type="button" data-action="digit" data-value="6">6</button>
+      <button type="button" class="operator" data-action="operator" data-value="-" aria-label="Subtract">−</button>
+
+      <button type="button" data-action="digit" data-value="1">1</button>
+      <button type="button" data-action="digit" data-value="2">2</button>
+      <button type="button" data-action="digit" data-value="3">3</button>
+      <button type="button" class="operator" data-action="operator" data-value="+" aria-label="Add">+</button>
+
+      <button type="button" class="zero" data-action="digit" data-value="0">0</button>
+      <button type="button" data-action="decimal" aria-label="Decimal point">.</button>
+      <button type="button" class="equals" data-action="equals" aria-label="Calculate result">=</button>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
