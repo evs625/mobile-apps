@@ -5,20 +5,20 @@ on:
     branches: [main]
     paths:
       - "android/calculator-wrapper/**"
-      - "apps/calculator/**"
       - ".github/workflows/build-android-calculator.yml"
   workflow_dispatch:
 
 permissions:
   contents: write
-
-concurrency:
-  group: calculator-android-apk
-  cancel-in-progress: true
+  pages: write
+  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    concurrency:
+      group: calculator-android-apk
+      cancel-in-progress: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -75,3 +75,28 @@ jobs:
 
           git commit -m "Publish calculator Android APK"
           git push origin HEAD:main
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout latest main branch
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy site with APK
+        id: deployment
+        uses: actions/deploy-pages@v4
