@@ -5,6 +5,10 @@ const expressionDisplay = document.querySelector("[data-expression]");
 const keypad = document.querySelector("[data-keypad]");
 const liveRegion = document.querySelector("[data-live]");
 
+if (new URLSearchParams(window.location.search).get("wrapper") === "android") {
+  document.documentElement.dataset.wrapper = "android";
+}
+
 const SYMBOLS = { "*": "×", "/": "÷", "-": "−", "+": "+" };
 
 let tokens = [];
