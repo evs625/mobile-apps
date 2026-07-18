@@ -1,29 +1,28 @@
-# Calculator Android WebView Wrapper
+# Calculator Android WebView Wrapper — Archived Experiment
 
-A minimal native Android shell for the live calculator hosted at:
+This directory contains the earlier native Android WebView prototype for the live calculator hosted at:
 
 ```text
 https://evs625.github.io/mobile-apps/apps/calculator/
 ```
 
-The wrapper provides:
+The prototype attempted to provide an immersive full-screen shell with no browser controls. An installed build crashed at startup during on-device testing, so the wrapper is currently **unsupported and not distributed**.
 
-- full-screen immersive display with no browser controls;
-- a navigation allowlist restricted to the calculator URL;
-- Android WebView caching plus the calculator's service-worker offline fallback;
-- no JavaScript bridge, cookies, file access, location, or cleartext HTTP;
-- an installable debug APK built by GitHub Actions.
+The source is retained only for possible future diagnosis. The repository no longer:
 
-## Build locally
+- builds this project in GitHub Actions;
+- publishes an APK artifact;
+- exposes an APK download through GitHub Pages; or
+- presents the wrapper as a supported installation method.
 
-Use JDK 17, Android SDK Platform 36, and Gradle 8.13:
+For current use, open the calculator as a normal web page, install its PWA, or load the live URL in Native Alpha or another lightweight wrapper.
+
+## Local investigation
+
+A future investigation should reproduce the crash with Android logcat before changing or republishing the wrapper. The previous project expected JDK 17, Android SDK Platform 36, and Gradle 8.13:
 
 ```bash
 gradle :app:assembleDebug
 ```
 
-The APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
-
-## Signing note
-
-The automated build is a debug APK. It is suitable for direct sideloading. Because GitHub-hosted runners create a fresh debug signing key, a later native-wrapper rebuild may require uninstalling the previous APK first. Changes to the hosted HTML calculator do not require an APK rebuild.
+No compatibility or runtime guarantees are currently made for this project.
