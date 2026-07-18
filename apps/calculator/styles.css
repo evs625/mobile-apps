@@ -52,45 +52,20 @@ body {
 
 .brand { font-size: .8rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 
-.top-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.apk-link,
 .back-link {
-  min-height: 40px;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
   border-radius: 13px;
   color: var(--muted);
   text-decoration: none;
 }
 
-.apk-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 11px;
-  background: var(--key);
-  font-size: .75rem;
-  font-weight: 750;
-  white-space: nowrap;
-}
-
-.back-link {
-  display: inline-grid;
-  place-items: center;
-  width: 40px;
-}
-
-.apk-link:hover,
-.back-link:hover { background: var(--key-hover); color: var(--text); }
-[data-wrapper="android"] .apk-link,
+.back-link:hover { background: var(--key); color: var(--text); }
 [data-wrapper="android"] .back-link { display: none; }
 [data-wrapper="android"] .topbar { justify-content: flex-start; }
-.apk-link:focus-visible,
-.back-link:focus-visible,
-button:focus-visible { outline: 3px solid rgba(37, 99, 235, .55); outline-offset: 2px; }
+.back-link:focus-visible, button:focus-visible { outline: 3px solid rgba(37, 99, 235, .55); outline-offset: 2px; }
 
 .display-panel {
   min-height: 154px;
@@ -170,18 +145,14 @@ button.zero { grid-column: span 2; }
 }
 
 @media (display-mode: standalone) {
-  .apk-link { display: none; }
+  .back-link { display: none; }
+  .topbar { justify-content: flex-start; }
 }
 
 @media (max-height: 700px) {
   body { place-items: start center; }
   .display-panel { min-height: 116px; padding-top: 14px; padding-bottom: 16px; }
   button { min-height: 55px; border-radius: 17px; }
-}
-
-@media (max-width: 365px) {
-  .apk-link span { display: none; }
-  .apk-link { width: 40px; justify-content: center; padding: 0; }
 }
 
 @media (prefers-color-scheme: dark) {
