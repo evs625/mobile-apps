@@ -27,3 +27,7 @@ For every requested app:
 ## Delivery defaults
 
 Deliver the complete repository as a ZIP archive plus a concise summary of files, validation performed, and GitHub Pages publication steps.
+
+## Android wrapper default
+
+When a user requests a native Android shell, create it under `android/<app-name>-wrapper/` as a minimal WebView app that loads the live GitHub Pages URL, hides browser and system UI when requested, allowlists only the app path, avoids JavaScript bridges, and includes a GitHub Actions APK build.
