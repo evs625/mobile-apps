@@ -2,3 +2,8 @@
 Thumbs.db
 node_modules/
 *.log
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
