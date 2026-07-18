@@ -10,7 +10,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: calculator-android-apk
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -46,10 +50,28 @@ jobs:
       - name: Name APK
         run: cp android/calculator-wrapper/app/build/outputs/apk/debug/app-debug.apk calculator-webview.apk
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
           name: calculator-android-apk
           path: calculator-webview.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish APK for GitHub Pages
+        run: |
+          mkdir -p downloads
+          cp calculator-webview.apk downloads/calculator-webview.apk
+          sha256sum downloads/calculator-webview.apk > downloads/calculator-webview.sha256.txt
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add downloads/calculator-webview.apk downloads/calculator-webview.sha256.txt
+
+          if git diff --cached --quiet; then
+            echo "Published APK is already current."
+            exit 0
+          fi
+
+          git commit -m "Publish calculator Android APK"
+          git push origin HEAD:main
