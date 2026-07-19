@@ -1,9 +1,11 @@
-const CACHE_NAME = "particle-system-v1";
+const CACHE_NAME = "particle-system-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./manifest.webmanifest",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
   "./icons/icon.svg",
   "./icons/icon-maskable.svg",
   "./src/main.js",
