@@ -11,13 +11,14 @@ A build-free repository for small, modern HTML applications that work on phones 
 - `docs/PROJECT_CONVENTIONS.md` — rules for creating future applications.
 - `CHATGPT_PROJECT_INSTRUCTIONS.md` — reusable instructions for this ChatGPT project.
 
-## Included test application
+## Included applications
 
 - [Calculator](./apps/calculator/) — responsive, keyboard-accessible, installable PWA with offline support.
+- [Particle System Lab](./apps/particle-system/) — configurable WebGL2 particle simulation with deterministic presets, persistent settings, and offline support.
 
 ## Ways to use an app
 
-The repository publishes one live web application. The following are launch methods for the same code, not separate application versions:
+The repository publishes live web applications. The following are launch methods for the same code, not separate application versions:
 
 1. **Regular browser page** — no installation; browser controls remain visible.
 2. **Installed PWA** — launcher icon, standalone window, automatic web updates, and offline use after the first successful load.
