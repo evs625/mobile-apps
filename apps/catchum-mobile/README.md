@@ -4,7 +4,9 @@ A build-free, unofficial mobile recreation of the Kaypro/CP/M game **CatChum**.
 
 ## Controls
 
-- Give the phone a short, sharp jolt left, right, up, or down to queue one turn. Gentle tilt and hand jitter are ignored.
+- Motion mode **Both** accepts either a lateral phone jolt or a rotational edge-down jolt.
+- Lateral mode: shift the whole phone sharply left/right/up/down.
+- Rotational mode: snap the intended edge downward; left edge down means left, top edge down means up, etc.
 - Touch D-pad: original numeric layout `8`, `4`, `6`, `2`.
 - Keyboard: arrows, WASD, or `8/4/6/2`.
 - Hyperspace: Space or the HYPER button.
@@ -16,4 +18,4 @@ The maze, text, difficulty range, hyperspace terminology, extra-cat rules, and s
 
 ## Local storage
 
-`catchum-mobile-v1` stores high scores and user settings on the current device. Active games are not persisted.
+`catchum-mobile-v1` stores high scores and user settings. `catchum-mobile-motion-mode-v1` stores the selected motion gesture mode. Active games are not persisted.
