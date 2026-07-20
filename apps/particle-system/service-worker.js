@@ -1,4 +1,4 @@
-const CACHE_NAME = "particle-system-v2";
+const CACHE_NAME = "particle-system-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -15,6 +15,7 @@ const APP_SHELL = [
   "./src/simulation/config.js",
   "./src/simulation/force.js",
   "./src/simulation/math.js",
+  "./src/simulation/touch.js",
   "./src/simulation/types.js",
   "./src/ui/Controls.js",
 ];
