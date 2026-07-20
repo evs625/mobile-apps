@@ -1,11 +1,15 @@
-const CACHE_NAME = "catchum-mobile-v1";
+const CACHE_NAME = "catchum-mobile-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./engine.js",
+  "./engine.js?original",
+  "./engine-fixed.js",
   "./tilt.js",
+  "./tilt.js?original",
+  "./tilt-fixed.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-maskable.svg",
