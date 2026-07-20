@@ -7,8 +7,8 @@ const APP_SHELL = [
   "./engine.js",
   "./tilt.js",
   "./manifest.webmanifest",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
+  "./icons/icon.svg",
+  "./icons/icon-maskable.svg",
 ];
 
 self.addEventListener("install", (event) => {
