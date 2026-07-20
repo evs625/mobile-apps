@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="./icons/icon.svg">
   <link rel="stylesheet" href="./styles.css">
   <script type="importmap">
-    {"imports":{"./engine.js":"./engine-fixed.js","./tilt.js":"./motion-controller.js"}}
+    {"imports":{"./engine.js":"./engine-fixed.js","./tilt.js":"./motion-controller-invert.js"}}
   </script>
   <title>CatChum Mobile</title>
 </head>
@@ -106,7 +106,7 @@
       <h2>Escape the CHUMS</h2>
       <p>You are the CAT, shown as <strong>C</strong> and <strong>c</strong>. Eat every dot, avoid the four <strong>A</strong> CHUMS, and use the large <strong>o</strong> dots to make them vulnerable as <strong>m</strong>.</p>
       <p><strong>Lateral jolt:</strong> shift the whole phone sharply left, right, up, or down without deliberately rotating it.</p>
-      <p><strong>Rotational jolt:</strong> snap one edge downward while the opposite edge rises. The downward edge is the direction: left edge down means left, top edge down means up, and so on.</p>
+      <p><strong>Rotational jolt:</strong> snap one edge downward while the opposite edge rises. The downward edge is the direction: left edge down means left, top edge down means up, and so on. Enable <strong>Invert rotational direction</strong> if your phone reports the gyro signs oppositely.</p>
       <p><strong>Both</strong> accepts either gesture. Gentle movement, hand jitter, and slow rotation are ignored. Let the phone settle before the next command.</p>
       <p>Buttons: <strong>8/4/6/2</strong> or arrows/WASD. <strong>Space</strong> uses limited hyperspace fuel. <strong>Escape</strong> or P pauses.</p>
       <p>You receive a new CAT every 10,000 points and on each new level. Two-player games alternate after a CAT is deleted.</p>
@@ -133,6 +133,7 @@
   </dialog>
 
   <script type="module" src="./motion-mode.js"></script>
+  <script type="module" src="./rotation-invert.js"></script>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
