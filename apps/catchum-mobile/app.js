@@ -39,7 +39,7 @@ let highScorePrompted = false;
 
 const tiltController = new TiltController({
   sensitivity: settings.sensitivity,
-  onDirection: queueDirection,
+  onDirection: handleJoltDirection,
   onStatus: (message) => { tiltStatus.textContent = message; },
 });
 
@@ -135,6 +135,16 @@ async function startGame() {
 function queueDirection(direction) {
   if (!game) return;
   game.queueDirection(direction);
+}
+
+function handleJoltDirection(direction) {
+  queueDirection(direction);
+  const button = document.querySelector(`[data-direction="${direction}"]`);
+  if (!button) return;
+  button.classList.remove("sensor-hit");
+  void button.offsetWidth;
+  button.classList.add("sensor-hit");
+  window.setTimeout(() => button.classList.remove("sensor-hit"), 180);
 }
 
 function handleKey(event) {

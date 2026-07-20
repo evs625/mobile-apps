@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#020503">
-  <meta name="description" content="A sharp, terminal-style mobile recreation of the Kaypro CP/M game CatChum, with tilt and button controls.">
+  <meta name="description" content="A sharp, terminal-style CatChum recreation with deliberate phone-jolt and button controls.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CatChum Mobile">
@@ -23,9 +23,9 @@
       <a class="icon-button" href="../../" aria-label="Back to app catalog">‹</a>
       <div class="title-block">
         <strong>CatChum Mobile</strong>
-        <span data-tilt-status>Tilt not calibrated</span>
+        <span data-tilt-status>Jolt control not armed</span>
       </div>
-      <button class="text-button" type="button" data-recalibrate>Recalibrate</button>
+      <button class="text-button" type="button" data-recalibrate>Reset motion</button>
       <button class="icon-button" type="button" data-open-menu aria-label="Open game menu">☰</button>
     </header>
 
@@ -70,7 +70,7 @@
     <form method="dialog" onsubmit="return false">
       <p class="eyebrow">KAYPRO / CP/M RECREATION</p>
       <h1>CatChum Mobile</h1>
-      <p class="intro">Escape the backspacing CHUMS. Tilt the phone or use the permanent direction buttons.</p>
+      <p class="intro">Escape the backspacing CHUMS. Give the phone a short, sharp jolt or use the permanent direction buttons.</p>
 
       <fieldset>
         <legend>Players</legend>
@@ -84,8 +84,8 @@
         <input type="range" min="1" max="9" step="1" value="1" data-difficulty>
       </label>
 
-      <label class="switch-row"><span>Phone tilt</span><input type="checkbox" checked data-tilt-toggle></label>
-      <label class="range-row">Tilt sensitivity <output data-sensitivity-value>1.00×</output>
+      <label class="switch-row"><span>Jolt steering</span><input type="checkbox" checked data-tilt-toggle></label>
+      <label class="range-row">Jolt sensitivity <output data-sensitivity-value>1.00×</output>
         <input type="range" min="0.65" max="1.6" step="0.05" value="1" data-sensitivity>
       </label>
       <label class="select-row"><span>D-pad side</span><select data-side-toggle><option value="right">Right</option><option value="left">Left</option></select></label>
@@ -104,7 +104,7 @@
       <p class="eyebrow">INSTRUCTIONS</p>
       <h2>Escape the CHUMS</h2>
       <p>You are the CAT, shown as <strong>C</strong> and <strong>c</strong>. Eat every dot, avoid the four <strong>A</strong> CHUMS, and use the large <strong>o</strong> dots to make them vulnerable as <strong>m</strong>.</p>
-      <p>Tilt in the direction you want to turn. Turns are queued at intersections. Recalibrate in the posture you are currently using—flat, angled, or upright.</p>
+      <p>Give the phone one short, sharp jolt left, right, up, or down. Gentle tilting and normal hand jitter are ignored. One jolt queues one turn; let the phone settle before the next jolt.</p>
       <p>Buttons: <strong>8/4/6/2</strong> or arrows/WASD. <strong>Space</strong> uses limited hyperspace fuel. <strong>Escape</strong> or P pauses.</p>
       <p>You receive a new CAT every 10,000 points and on each new level. Two-player games alternate after a CAT is deleted.</p>
       <button type="button" class="primary" data-close>RETURN</button>
