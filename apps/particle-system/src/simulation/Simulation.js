@@ -1,6 +1,8 @@
 import { applyGlobalForces, applyPairForce } from "./force.js";
 import { clamp, mulberry32, TAU } from "./math.js";
 import { SpatialHash } from "./SpatialHash.js";
+import { applyTouchForce } from "./touch.js";
+
 export class Simulation {
     config;
     width;
@@ -9,22 +11,30 @@ export class Simulation {
     diagnostics = {
         pairChecks: 0,
         neighborCandidates: 0,
+        touchPoints: 0,
+        touchApplications: 0,
     };
     grid = new SpatialHash();
     rng = mulberry32(1);
     time = 0;
+    touchPoints = [];
+
     constructor(config, width, height) {
         this.config = config;
         this.width = width;
         this.height = height;
         this.reset(config.seed);
     }
+
     setConfig(config) {
         const needsRebuild = config.particleCount !== this.config.particleCount
             || config.radius !== this.config.radius
             || config.distribution !== this.config.distribution
             || config.seed !== this.config.seed;
         this.config = config;
+        if (!config.touchEnabled) {
+            this.setTouchPoints([]);
+        }
         if (needsRebuild) {
             this.reset(config.seed);
         }
@@ -35,6 +45,12 @@ export class Simulation {
             }
         }
     }
+
+    setTouchPoints(points) {
+        this.touchPoints = this.config.touchEnabled ? points : [];
+        this.diagnostics.touchPoints = this.touchPoints.length;
+    }
+
     resize(width, height) {
         const sx = width / Math.max(1, this.width);
         const sy = height / Math.max(1, this.height);
@@ -45,6 +61,7 @@ export class Simulation {
             particle.y *= sy;
         }
     }
+
     reset(seed = this.config.seed) {
         this.rng = mulberry32(seed);
         this.time = 0;
@@ -55,11 +72,13 @@ export class Simulation {
         }
         this.shuffleHues();
     }
+
     step(dt) {
         const scaledDt = clamp(dt, 0, 2.5);
         this.time += scaledDt * 16.6667;
         this.diagnostics.pairChecks = 0;
         this.diagnostics.neighborCandidates = 0;
+        this.diagnostics.touchApplications = 0;
         for (const particle of this.particles) {
             particle.fx = 0;
             particle.fy = 0;
@@ -74,10 +93,16 @@ export class Simulation {
         }
         for (const particle of this.particles) {
             applyGlobalForces(particle, this.config, this.width, this.height, this.time);
+            for (const touch of this.touchPoints) {
+                if (applyTouchForce(particle, touch, this.config)) {
+                    this.diagnostics.touchApplications += 1;
+                }
+            }
             this.integrate(particle, scaledDt);
             this.resolveBoundary(particle);
         }
     }
+
     createParticle(id, hue) {
         let x = this.rng() * this.width;
         let y = this.rng() * this.height;
@@ -109,6 +134,7 @@ export class Simulation {
             mass: 1,
         };
     }
+
     shuffleHues() {
         const hues = this.particles.map((particle) => particle.hue);
         for (let i = hues.length - 1; i > 0; i -= 1) {
@@ -119,6 +145,7 @@ export class Simulation {
             this.particles[i].hue = hues[i];
         }
     }
+
     integrate(particle, dt) {
         particle.vx = (particle.vx + particle.fx * dt) * this.config.damping;
         particle.vy = (particle.vy + particle.fy * dt) * this.config.damping;
@@ -131,6 +158,7 @@ export class Simulation {
         particle.x += particle.vx * dt;
         particle.y += particle.vy * dt;
     }
+
     resolveBoundary(particle) {
         const r = particle.radius;
         if (this.config.boundaryMode === "wrap") {
