@@ -36,6 +36,7 @@ a { -webkit-tap-highlight-color: transparent; }
 canvas {
   position: absolute;
   inset: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   display: block;
@@ -44,23 +45,64 @@ canvas {
 
 .chamber-frame {
   position: absolute;
+  z-index: 2;
   border: 1px solid rgba(255, 255, 255, 0.18);
   pointer-events: none;
 }
 
+.touch-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.touch-indicator {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  color: #57d6ff;
+  background: radial-gradient(circle, currentColor 0 3px, transparent 4px);
+  box-shadow: 0 0 24px color-mix(in srgb, currentColor 55%, transparent);
+  opacity: 0.78;
+  font-size: 18px;
+  font-weight: 800;
+  text-shadow: 0 1px 3px #000;
+}
+
+.touch-indicator[data-mode="repel"] { color: #ff646f; }
+.touch-indicator[data-mode="vortexClockwise"] { color: #ffd45a; }
+.touch-indicator[data-mode="vortexCounterclockwise"] { color: #c38cff; }
+.touch-indicator[data-mode="stir"] { color: #65f29a; }
+.touch-indicator[data-mode="brake"] { color: #d4dae5; }
+
 .console {
   position: absolute;
+  z-index: 4;
   top: max(16px, env(safe-area-inset-top));
   left: max(16px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
   width: min(380px, calc(100vw - 32px));
   max-height: calc(100dvh - max(32px, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
-  overflow: auto;
-  padding: 14px;
+  overflow: hidden;
+  padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
   background: rgba(8, 10, 14, 0.84);
   backdrop-filter: blur(14px);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+}
+
+.console-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 0 14px 14px;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
 }
 
@@ -68,15 +110,18 @@ canvas {
   width: auto;
   max-height: none;
   overflow: visible;
-  padding: 8px;
 }
 
 .console.is-collapsed .console-body { display: none; }
 
-.panel-toggle { margin-bottom: 12px; }
+.panel-toggle {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  margin: 8px;
+}
 
 .console.is-collapsed .panel-toggle {
-  margin-bottom: 0;
   min-width: 126px;
 }
 
@@ -100,6 +145,13 @@ canvas {
   color: #aeb7c8;
   font-size: 12px;
   line-height: 1.35;
+}
+
+.control-help {
+  margin-top: 12px !important;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(87, 214, 255, 0.08);
 }
 
 .catalog-link {
@@ -235,4 +287,5 @@ canvas {
 
 @media (prefers-reduced-motion: reduce) {
   .console { backdrop-filter: none; }
+  .touch-indicator { box-shadow: none; }
 }
