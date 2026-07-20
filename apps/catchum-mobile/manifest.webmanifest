@@ -1,0 +1,15 @@
+{
+  "name": "CatChum Mobile",
+  "short_name": "CatChum",
+  "description": "A terminal-style CatChum recreation with phone-tilt, touch, and keyboard controls.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#020503",
+  "theme_color": "#020503",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./icons/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

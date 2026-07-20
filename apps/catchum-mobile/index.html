@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#020503">
+  <meta name="description" content="A sharp, terminal-style mobile recreation of the Kaypro CP/M game CatChum, with tilt and button controls.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CatChum Mobile">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" sizes="any" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon.svg">
+  <link rel="stylesheet" href="./styles.css">
+  <title>CatChum Mobile</title>
+</head>
+<body>
+  <main class="game-shell" data-shell aria-label="CatChum Mobile">
+    <header class="topbar">
+      <a class="icon-button" href="../../" aria-label="Back to app catalog">‹</a>
+      <div class="title-block">
+        <strong>CatChum Mobile</strong>
+        <span data-tilt-status>Tilt not calibrated</span>
+      </div>
+      <button class="text-button" type="button" data-recalibrate>Recalibrate</button>
+      <button class="icon-button" type="button" data-open-menu aria-label="Open game menu">☰</button>
+    </header>
+
+    <section class="play-layout">
+      <aside class="status-panel" data-status-panel aria-label="Player status">
+        <article class="player-card active" data-player-card>
+          <h2>PLAYER 1</h2>
+          <output data-score>000000</output>
+          <dl><div><dt>CATS</dt><dd data-cats>3</dd></div><div><dt>HYPER'S</dt><dd data-hypers>3</dd></div><div><dt>LEVEL</dt><dd data-level>1</dd></div></dl>
+        </article>
+        <article class="player-card" data-player-card hidden>
+          <h2>PLAYER 2</h2>
+          <output data-score>000000</output>
+          <dl><div><dt>CATS</dt><dd data-cats>3</dd></div><div><dt>HYPER'S</dt><dd data-hypers>3</dd></div><div><dt>LEVEL</dt><dd data-level>1</dd></div></dl>
+        </article>
+      </aside>
+
+      <div class="terminal-frame">
+        <canvas data-game role="img" aria-label="CatChum maze and characters"></canvas>
+      </div>
+
+      <nav class="controls" aria-label="Game controls">
+        <div class="dpad" aria-label="Directional pad">
+          <button type="button" class="up" data-direction="up" aria-label="Move up"><span>▲</span><small>8</small></button>
+          <button type="button" class="left" data-direction="left" aria-label="Move left"><span>◀</span><small>4</small></button>
+          <button type="button" class="center" tabindex="-1" aria-hidden="true">C</button>
+          <button type="button" class="right" data-direction="right" aria-label="Move right"><span>▶</span><small>6</small></button>
+          <button type="button" class="down" data-direction="down" aria-label="Move down"><span>▼</span><small>2</small></button>
+        </div>
+        <button type="button" class="action-button" data-hyper>HYPER <kbd>SPACE</kbd></button>
+        <button type="button" class="action-button" data-pause>PAUSE <kbd>ESC</kbd></button>
+      </nav>
+    </section>
+  </main>
+
+  <div class="rotate-overlay" data-rotate hidden>
+    <strong>ROTATE TO LANDSCAPE</strong>
+    <span>CatChum Mobile is designed for landscape play.</span>
+  </div>
+
+  <dialog class="modal menu-modal" data-menu>
+    <form method="dialog" onsubmit="return false">
+      <p class="eyebrow">KAYPRO / CP/M RECREATION</p>
+      <h1>CatChum Mobile</h1>
+      <p class="intro">Escape the backspacing CHUMS. Tilt the phone or use the permanent direction buttons.</p>
+
+      <fieldset>
+        <legend>Players</legend>
+        <div class="segment">
+          <button type="button" class="selected" data-players="1">1 PLAYER</button>
+          <button type="button" data-players="2">2 PLAYERS</button>
+        </div>
+      </fieldset>
+
+      <label class="range-row">Difficulty level <output data-difficulty-value>1</output>
+        <input type="range" min="1" max="9" step="1" value="1" data-difficulty>
+      </label>
+
+      <label class="switch-row"><span>Phone tilt</span><input type="checkbox" checked data-tilt-toggle></label>
+      <label class="range-row">Tilt sensitivity <output data-sensitivity-value>1.00×</output>
+        <input type="range" min="0.65" max="1.6" step="0.05" value="1" data-sensitivity>
+      </label>
+      <label class="select-row"><span>D-pad side</span><select data-side-toggle><option value="right">Right</option><option value="left">Left</option></select></label>
+
+      <button type="button" class="primary" data-start>START / NEW GAME</button>
+      <button type="button" class="secondary" data-resume hidden>RESUME GAME</button>
+      <div class="menu-links">
+        <button type="button" data-open-instructions>Instructions</button>
+        <button type="button" data-open-scores>High scores</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal text-modal" data-instructions>
+    <article>
+      <p class="eyebrow">INSTRUCTIONS</p>
+      <h2>Escape the CHUMS</h2>
+      <p>You are the CAT, shown as <strong>C</strong> and <strong>c</strong>. Eat every dot, avoid the four <strong>A</strong> CHUMS, and use the large <strong>o</strong> dots to make them vulnerable as <strong>m</strong>.</p>
+      <p>Tilt in the direction you want to turn. Turns are queued at intersections. Recalibrate in the posture you are currently using—flat, angled, or upright.</p>
+      <p>Buttons: <strong>8/4/6/2</strong> or arrows/WASD. <strong>Space</strong> uses limited hyperspace fuel. <strong>Escape</strong> or P pauses.</p>
+      <p>You receive a new CAT every 10,000 points and on each new level. Two-player games alternate after a CAT is deleted.</p>
+      <button type="button" class="primary" data-close>RETURN</button>
+    </article>
+  </dialog>
+
+  <dialog class="modal scores-modal" data-scores>
+    <article>
+      <p class="eyebrow">LOCAL DEVICE</p>
+      <h2>High Scores</h2>
+      <ol></ol>
+      <button type="button" class="primary" data-close>RETURN</button>
+    </article>
+  </dialog>
+
+  <dialog class="modal name-modal" data-name-dialog>
+    <form>
+      <p class="eyebrow">NEW HIGH SCORE</p>
+      <h2>Score <span data-final-score>0</span></h2>
+      <label>Name <input name="name" maxlength="9" autocomplete="nickname" spellcheck="false"></label>
+      <button type="submit" class="primary">SAVE SCORE</button>
+    </form>
+  </dialog>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
