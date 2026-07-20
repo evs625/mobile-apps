@@ -1,4 +1,4 @@
-const CACHE_NAME = "catchum-mobile-v6";
+const CACHE_NAME = "catchum-mobile-v7";
 const APP_SHELL = [
   "./",
   "./index.html",
