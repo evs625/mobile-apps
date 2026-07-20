@@ -4,7 +4,7 @@ A build-free, unofficial mobile recreation of the Kaypro/CP/M game **CatChum**.
 
 ## Controls
 
-- Tilt the phone after calibration to queue a direction.
+- Give the phone a short, sharp jolt left, right, up, or down to queue one turn. Gentle tilt and hand jitter are ignored.
 - Touch D-pad: original numeric layout `8`, `4`, `6`, `2`.
 - Keyboard: arrows, WASD, or `8/4/6/2`.
 - Hyperspace: Space or the HYPER button.
