@@ -15,6 +15,7 @@ A build-free repository for small, modern HTML applications that work on phones 
 
 - [Calculator](./apps/calculator/) — responsive, keyboard-accessible, installable PWA with offline support.
 - [Particle System Lab](./apps/particle-system/) — configurable WebGL2 particle simulation with deterministic presets, persistent settings, and offline support.
+- [CatChum Mobile](./apps/catchum-mobile/) — landscape terminal-style maze game with calibrated tilt, touch, and keyboard controls, alternating two-player mode, local high scores, and offline support.
 
 ## Ways to use an app
 
