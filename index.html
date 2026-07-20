@@ -61,6 +61,7 @@
     .app-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
     .icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 18px; background: #111827; color: white; font-size: 1.5rem; font-weight: 800; }
     .particle-icon { background: conic-gradient(#ff4d4d, #ffe14d, #4dff88, #4dd9ff, #7654ff, #ff4dc4, #ff4d4d); color: #05070b; box-shadow: inset 0 0 0 8px rgba(0, 0, 0, .7); }
+    .catchum-icon { border: 1px solid #65d65d; background: #020503; color: #b8ff9f; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .app-copy p { margin: 7px 0 0; color: var(--muted); line-height: 1.5; }
     .arrow { color: var(--muted); font-size: 1.5rem; }
     .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
@@ -107,6 +108,7 @@
       }
       .icon { background-color: #f8fafc; color: #111827; }
       .particle-icon { color: #05070b; }
+      .catchum-icon { background-color: #020503; color: #b8ff9f; }
       .tag, .number { color: #cbd5e1; }
       .same-app { background: rgba(59, 130, 246, .10); }
     }
@@ -143,6 +145,21 @@
             <span class="tag">WebGL2</span>
             <span class="tag">Offline after first load</span>
             <span class="tag">Configurable</span>
+          </span>
+        </span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a class="app-card" href="./apps/catchum-mobile/">
+        <span class="icon catchum-icon" aria-hidden="true">C</span>
+        <span class="app-copy">
+          <h2>CatChum Mobile</h2>
+          <p>A sharp terminal-style recreation of the Kaypro maze game, with calibrated phone-tilt navigation and permanent touch controls.</p>
+          <span class="meta">
+            <span class="tag">PWA</span>
+            <span class="tag">Tilt controls</span>
+            <span class="tag">Offline after first load</span>
+            <span class="tag">1–2 players</span>
           </span>
         </span>
         <span class="arrow" aria-hidden="true">→</span>
