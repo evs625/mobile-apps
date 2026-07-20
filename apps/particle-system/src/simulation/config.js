@@ -1,5 +1,18 @@
-export const CONFIG_STORAGE_KEY = "mobile-apps:particle-system:config:v2";
+export const CONFIG_STORAGE_KEY = "mobile-apps:particle-system:config:v3";
+export const PREVIOUS_CONFIG_STORAGE_KEY = "mobile-apps:particle-system:config:v2";
 export const LEGACY_CONFIG_COOKIE_NAME = "webgl-particle-system-config-v1";
+
+export const TOUCH_MODE_OPTIONS = [
+    { value: "attract", label: "Attract" },
+    { value: "repel", label: "Repel" },
+    { value: "vortexClockwise", label: "Vortex clockwise" },
+    { value: "vortexCounterclockwise", label: "Vortex counter-clockwise" },
+    { value: "stir", label: "Move with finger" },
+    { value: "brake", label: "Slow particles" },
+];
+
+const TOUCH_MODES = new Set(TOUCH_MODE_OPTIONS.map(({ value }) => value));
+
 export const defaultConfig = {
     particleCount: 800,
     radius: 3.2,
@@ -29,7 +42,16 @@ export const defaultConfig = {
     opacity: 0.92,
     trailFade: 0.18,
     backgroundFade: 0.3,
+    touchEnabled: false,
+    touchModePrimary: "attract",
+    touchModeSecondary: "repel",
+    touchPrimaryStrength: 0.24,
+    touchSecondaryStrength: 0.24,
+    touchRadius: 140,
+    touchFalloff: 2,
+    touchShowIndicators: true,
 };
+
 export const presets = {
     "Color wheel": { ...defaultConfig },
     "Calm clustering": {
@@ -83,6 +105,7 @@ export const presets = {
         wheelBias: 0.0018,
     },
 };
+
 export function sanitizeConfig(input, interactionRadiusMax = 4000) {
     const safeInteractionRadiusMax = Math.max(12, interactionRadiusMax);
     return {
@@ -107,11 +130,25 @@ export function sanitizeConfig(input, interactionRadiusMax = 4000) {
         chamberWidth: clampInt(input.chamberWidth ?? defaultConfig.chamberWidth, 240, 4000),
         chamberHeight: clampInt(input.chamberHeight ?? defaultConfig.chamberHeight, 180, 3000),
         seed: clampInt(input.seed ?? defaultConfig.seed, 1, 2147483647),
+        touchEnabled: Boolean(input.touchEnabled ?? defaultConfig.touchEnabled),
+        touchModePrimary: sanitizeTouchMode(input.touchModePrimary, defaultConfig.touchModePrimary),
+        touchModeSecondary: sanitizeTouchMode(input.touchModeSecondary, defaultConfig.touchModeSecondary),
+        touchPrimaryStrength: clampNumber(input.touchPrimaryStrength ?? defaultConfig.touchPrimaryStrength, 0.01, 1.5),
+        touchSecondaryStrength: clampNumber(input.touchSecondaryStrength ?? defaultConfig.touchSecondaryStrength, 0.01, 1.5),
+        touchRadius: clampNumber(input.touchRadius ?? defaultConfig.touchRadius, 30, Math.max(30, safeInteractionRadiusMax)),
+        touchFalloff: clampNumber(input.touchFalloff ?? defaultConfig.touchFalloff, 0.5, 4),
+        touchShowIndicators: Boolean(input.touchShowIndicators ?? defaultConfig.touchShowIndicators),
     };
 }
+
+function sanitizeTouchMode(value, fallback) {
+    return TOUCH_MODES.has(value) ? value : fallback;
+}
+
 function clampNumber(value, min, max) {
     return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 }
+
 function clampInt(value, min, max) {
     return Math.round(clampNumber(value, min, max));
 }
