@@ -121,10 +121,7 @@ canvas {
   margin: 8px;
 }
 
-.console.is-collapsed .panel-toggle {
-  min-width: 126px;
-}
-
+.console.is-collapsed .panel-toggle { min-width: 126px; }
 .console header { margin-bottom: 12px; }
 
 .title-row {
@@ -147,11 +144,17 @@ canvas {
   line-height: 1.35;
 }
 
-.control-help {
+.control-help,
+.engine-notice {
   margin-top: 12px !important;
   padding: 10px;
   border-radius: 8px;
   background: rgba(87, 214, 255, 0.08);
+}
+
+.engine-notice {
+  color: #ffd777 !important;
+  background: rgba(255, 184, 77, 0.12);
 }
 
 .catalog-link {
@@ -216,7 +219,6 @@ canvas {
 }
 
 .console button { cursor: pointer; }
-
 .console button:hover,
 .console select:hover,
 .catalog-link:hover { background: rgba(255, 255, 255, 0.14); }
@@ -258,7 +260,6 @@ canvas {
 }
 
 .diagnostics dt { color: #aeb7c8; }
-
 .diagnostics dd {
   margin: 0;
   color: #f3f6ff;
