@@ -1,5 +1,5 @@
+import { JoltDetector as BaseJoltDetector } from "./tilt-fixed.js?lateral";
 import {
-  JoltDetector as BaseJoltDetector,
   RotationalJoltDetector as BaseRotationalJoltDetector,
   TiltController as BaseTiltController,
 } from "./motion-controller.js?base";
