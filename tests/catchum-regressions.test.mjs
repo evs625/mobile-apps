@@ -36,6 +36,28 @@ test("every dot remains reachable after enforcing one-cell corridors", () => {
   }
 });
 
+test("eaten CHUMS revive after every energizer cycle", () => {
+  const game = new CatChumGame({ random: () => 0 });
+  game.phase = "playing";
+  const ghost = game.ghosts[0];
+  ghost.released = true;
+
+  for (let cycle = 1; cycle <= 3; cycle += 1) {
+    ghost.eaten = true;
+    ghost.position = { x: 24, y: 9 };
+    ghost.direction = DIRECTIONS.DOWN;
+
+    game.moveGhosts();
+    assert.equal(ghost.eaten, true, `cycle ${cycle}: CHUM must remain eaten while entering the door`);
+    assert.deepEqual(ghost.position, { x: 24, y: 10 }, `cycle ${cycle}: @ must reach the return door`);
+
+    game.moveGhosts();
+    assert.equal(ghost.eaten, false, `cycle ${cycle}: CHUM must revive at the door`);
+    assert.deepEqual(ghost.position, { x: 24, y: 9 }, `cycle ${cycle}: revived CHUM must reset at the exit`);
+    assert.equal(ghost.direction.name, "left", `cycle ${cycle}: revived CHUM must leave normally`);
+  }
+});
+
 test("Android orientation samples remain valid without compass alpha", () => {
   assert.ok(quaternionFromOrientationEvent({ alpha: null, beta: 12, gamma: -8 }, 90));
   assert.equal(quaternionFromOrientationEvent({ alpha: null, beta: null, gamma: -8 }, 90), null);
