@@ -4,11 +4,22 @@ import {
   MAZE_HEIGHT,
   MAZE_SOURCE,
   MAZE_WIDTH,
+  availableDirections,
+  chooseTargetDirection,
   displayTile,
   insertHighScore,
+  movePosition,
   normalizeHighScores,
+  opposite,
 } from "./engine.js";
 import { TiltController } from "./tilt.js";
+import {
+  DIRECTION_VECTORS,
+  clamp01,
+  interpolatePosition,
+  remainingProgress,
+  wrappedRenderPositions,
+} from "./visual-motion.js";
 
 const STORAGE_KEY = "catchum-mobile-v1";
 const canvas = document.querySelector("[data-game]");
@@ -36,6 +47,12 @@ let running = false;
 let accumulator = 0;
 let lastFrame = performance.now();
 let highScorePrompted = false;
+let queuedTurnRequest = null;
+let catVisualOverride = null;
+
+const queuedTurnStyle = document.createElement("style");
+queuedTurnStyle.textContent = ".dpad button.queued-turn{border-color:#ffe979;box-shadow:0 0 0 2px rgba(255,233,121,.28),inset 0 0 12px rgba(255,233,121,.22)}";
+document.head.append(queuedTurnStyle);
 
 const tiltController = new TiltController({
   sensitivity: settings.sensitivity,
@@ -109,6 +126,8 @@ async function startGame() {
   running = true;
   accumulator = 0;
   lastFrame = performance.now();
+  catVisualOverride = null;
+  clearQueuedTurn();
   closeDialog(menu);
 
   if (settings.tiltEnabled) {
@@ -132,9 +151,112 @@ async function startGame() {
   render();
 }
 
+function estimatedAccumulator() {
+  if (!running || !game) return accumulator;
+  return accumulator + Math.max(0, performance.now() - lastFrame);
+}
+
+function currentMotionProgress() {
+  if (!game || game.phase !== "playing") return 0;
+  return clamp01(estimatedAccumulator() / game.intervalMs);
+}
+
+function actorTarget(position, directionName, actor) {
+  const direction = DIRECTION_VECTORS[directionName];
+  if (!direction) return null;
+  const logicalTarget = movePosition(position, direction);
+  if (!game.canEnter(logicalTarget, actor)) return null;
+  return {
+    x: position.x + direction.dx,
+    y: position.y + direction.dy,
+  };
+}
+
+function catRenderPosition(progress = currentMotionProgress()) {
+  if (!game) return null;
+  const position = game.cat.position;
+  if (game.phase !== "playing") return { ...position };
+
+  if (catVisualOverride?.stepCount === game.stepCount) {
+    return interpolatePosition(
+      catVisualOverride.from,
+      catVisualOverride.to,
+      remainingProgress(progress, catVisualOverride.startProgress),
+    );
+  }
+
+  const target = actorTarget(position, game.cat.direction.name, "cat");
+  return target ? interpolatePosition(position, target, progress) : { ...position };
+}
+
+function predictedGhostDirection(ghost) {
+  if (!game || !ghost?.released || game.phase !== "playing") return null;
+  const frightenedNext = game.timeMs + game.intervalMs < game.frightenedUntil;
+  if (frightenedNext && (game.stepCount + 1) % 2 === 0 && !ghost.eaten) return null;
+  if (ghost.eaten && ghost.position.x === 24 && ghost.position.y === 11) return null;
+
+  const legal = availableDirections(game.tiles, ghost.position, "ghost");
+  if (!legal.length) return null;
+  const reverse = opposite(ghost.direction);
+  const pool = legal.filter((direction) => direction.name !== reverse?.name);
+  const candidates = pool.length ? pool : legal;
+
+  if (frightenedNext && !ghost.eaten) {
+    return candidates.find((direction) => direction.name === ghost.direction.name) || candidates[0];
+  }
+
+  const target = ghost.eaten ? { x: 24, y: 11 } : game.ghostTarget(ghost);
+  return chooseTargetDirection(game.tiles, ghost.position, ghost.direction, target, "ghost");
+}
+
+function ghostRenderPosition(index, progress = currentMotionProgress()) {
+  const ghost = game?.ghosts[index];
+  if (!ghost || game.phase !== "playing") return ghost ? { ...ghost.position } : null;
+  const direction = predictedGhostDirection(ghost);
+  const target = direction ? actorTarget(ghost.position, direction.name, "ghost") : null;
+  return target ? interpolatePosition(ghost.position, target, progress) : { ...ghost.position };
+}
+
 function queueDirection(direction) {
   if (!game) return;
+  const progress = currentMotionProgress();
+  const currentVisualPosition = catRenderPosition(progress);
   game.queueDirection(direction);
+  queuedTurnRequest = { direction, stepCount: game.stepCount };
+  showQueuedTurn(direction);
+
+  if (game.phase !== "playing") return;
+  const target = actorTarget(game.cat.position, direction, "cat");
+  if (!target || !currentVisualPosition) return;
+  catVisualOverride = {
+    stepCount: game.stepCount,
+    from: currentVisualPosition,
+    to: target,
+    startProgress: progress,
+  };
+}
+
+function showQueuedTurn(direction) {
+  document.querySelectorAll("[data-direction]").forEach((button) => {
+    button.classList.toggle("queued-turn", button.dataset.direction === direction);
+  });
+}
+
+function clearQueuedTurn() {
+  queuedTurnRequest = null;
+  document.querySelectorAll("[data-direction]").forEach((button) => button.classList.remove("queued-turn"));
+}
+
+function syncQueuedTurnAfterStep() {
+  catVisualOverride = null;
+  if (!queuedTurnRequest || !game) return;
+  if (["death", "turn", "level-complete", "game-over"].includes(game.phase)) {
+    clearQueuedTurn();
+    return;
+  }
+  if (game.stepCount > queuedTurnRequest.stepCount && game.cat.direction.name === queuedTurnRequest.direction) {
+    clearQueuedTurn();
+  }
 }
 
 function handleJoltDirection(direction) {
@@ -161,6 +283,7 @@ function handleKey(event) {
   }
   if (event.key === " " && game) {
     game.useHyperspace();
+    catVisualOverride = null;
     event.preventDefault();
   } else if (["Escape", "p", "P"].includes(event.key) && game) {
     game.togglePause();
@@ -176,6 +299,7 @@ function frame(now) {
     while (accumulator >= game.intervalMs) {
       const snapshot = game.step();
       accumulator -= game.intervalMs;
+      syncQueuedTurnAfterStep();
       handleEvents(snapshot.events);
     }
   }
@@ -185,6 +309,10 @@ function frame(now) {
 
 function handleEvents(events) {
   for (const event of events) {
+    if (["death", "player-turn", "level-complete", "hyperspace"].includes(event.type)) {
+      catVisualOverride = null;
+      clearQueuedTurn();
+    }
     if (event.type === "game-over" && !highScorePrompted) {
       highScorePrompted = true;
       window.setTimeout(checkHighScore, 450);
@@ -245,7 +373,7 @@ function drawText(text, x, y, size, color = "#b8ff9f", align = "center") {
   context.font = `700 ${size}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
   context.textAlign = align;
   context.textBaseline = "middle";
-  context.fillText(text, x, y);
+  context.fillText(text, Math.round(x), Math.round(y));
 }
 
 function render() {
@@ -256,6 +384,7 @@ function render() {
   context.fillRect(0, 0, width, height);
 
   const snapshot = game?.snapshot();
+  const motionProgress = currentMotionProgress();
   const sidePadding = Math.max(8, width * 0.018);
   const topPadding = Math.max(8, height * 0.025);
   const cellWidth = Math.floor((width - sidePadding * 2) / MAZE_WIDTH);
@@ -294,9 +423,9 @@ function render() {
   }
   for (const ghost of snapshot.ghosts) {
     const character = ghost.eaten ? "@" : ghost.warning ? "M" : ghost.frightened ? "m" : "A";
-    drawEntity(character, ghost.position, ghost.frightened ? "#eaffdf" : "#c9ffb8", originX, originY, cellWidth, cellHeight, fontSize);
+    drawEntity(character, ghostRenderPosition(ghost.index, motionProgress), ghost.frightened ? "#eaffdf" : "#c9ffb8", originX, originY, cellWidth, cellHeight, fontSize);
   }
-  drawEntity(snapshot.cat.mouthOpen ? "C" : "c", snapshot.cat.position, "#ffffff", originX, originY, cellWidth, cellHeight, fontSize);
+  drawEntity(snapshot.cat.mouthOpen ? "C" : "c", catRenderPosition(motionProgress), "#ffffff", originX, originY, cellWidth, cellHeight, fontSize);
 
   if (snapshot.message) {
     const boxWidth = Math.min(width * 0.68, snapshot.message.length * fontSize * 0.7 + 28);
@@ -313,7 +442,15 @@ function render() {
 }
 
 function drawEntity(character, position, color, originX, originY, cellWidth, cellHeight, fontSize) {
-  drawText(character, originX + (position.x + 0.5) * cellWidth, originY + (position.y + 0.52) * cellHeight, fontSize, color);
+  for (const visible of wrappedRenderPositions(position, MAZE_WIDTH, MAZE_HEIGHT)) {
+    drawText(
+      character,
+      originX + (visible.x + 0.5) * cellWidth,
+      originY + (visible.y + 0.52) * cellHeight,
+      fontSize,
+      color,
+    );
+  }
 }
 
 function updateStatus(snapshot) {
@@ -351,7 +488,10 @@ document.querySelectorAll("[data-direction]").forEach((button) => {
   button.addEventListener("click", send);
 });
 document.querySelector("[data-pause]").addEventListener("click", () => game?.togglePause());
-document.querySelector("[data-hyper]").addEventListener("click", () => game?.useHyperspace());
+document.querySelector("[data-hyper]").addEventListener("click", () => {
+  game?.useHyperspace();
+  catVisualOverride = null;
+});
 playerButtons.forEach((button) => button.addEventListener("click", () => {
   playerButtons.forEach((item) => item.classList.remove("selected"));
   button.classList.add("selected");
