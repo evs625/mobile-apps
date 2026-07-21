@@ -185,7 +185,8 @@ function catRenderPosition(progress = currentMotionProgress()) {
     );
   }
 
-  const target = actorTarget(position, game.cat.direction.name, "cat");
+  const queuedTarget = actorTarget(position, game.cat.queuedDirection.name, "cat");
+  const target = queuedTarget || actorTarget(position, game.cat.direction.name, "cat");
   return target ? interpolatePosition(position, target, progress) : { ...position };
 }
 
