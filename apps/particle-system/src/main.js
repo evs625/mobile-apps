@@ -1,6 +1,7 @@
 import { defaultConfig, sanitizeConfig } from "./simulation/config.js";
 import { GpuDensitySimulation } from "./simulation/GpuDensitySimulation.js";
 import { Simulation } from "./simulation/Simulation.js";
+import { WasmExactSimulation } from "./simulation/WasmExactSimulation.js";
 import { WebGLRenderer } from "./render/WebGLRenderer.js";
 import { clearStoredConfig, Controls, loadStoredConfig, saveConfig } from "./ui/Controls.js";
 
@@ -30,6 +31,7 @@ let renderer;
 let simulation;
 let controls;
 let engineNotice = "";
+let replacementToken = 0;
 let lastTime = performance.now();
 let fpsTime = lastTime;
 let fpsFrames = 0;
@@ -40,7 +42,7 @@ const activePointers = new Map();
 
 try {
   renderer = new WebGLRenderer(canvas);
-  simulation = createSimulation(config);
+  simulation = await createSimulation(config);
   controls = new Controls(panel, config, applyConfig, handleAction, interactionRadiusMax());
   controls.setEngineNotice(engineNotice);
   controls.setCollapsed(window.matchMedia("(max-width: 720px)").matches);
@@ -70,8 +72,23 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-function createSimulation(requestedConfig) {
+async function createSimulation(requestedConfig) {
   engineNotice = "";
+  if (requestedConfig.physicsEngine === "wasmExact") {
+    try {
+      const wasm = await WasmExactSimulation.create(requestedConfig, chamber.width, chamber.height);
+      engineNotice = wasm.notice ?? "";
+      return wasm;
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "unknown WASM error";
+      engineNotice = `Rust WASM unavailable; using CPU exact. ${reason}`;
+      config = sanitizeConfig(
+        { ...requestedConfig, physicsEngine: "cpu" },
+        interactionRadiusMaxFor(requestedConfig),
+      );
+      saveConfig(config);
+    }
+  }
   if (requestedConfig.physicsEngine === "gpuField") {
     try {
       return new GpuDensitySimulation(
@@ -93,9 +110,23 @@ function createSimulation(requestedConfig) {
   return new Simulation(config, chamber.width, chamber.height);
 }
 
-function replaceSimulation() {
-  simulation?.destroy?.();
-  simulation = createSimulation(config);
+async function replaceSimulation() {
+  const token = ++replacementToken;
+  const previous = simulation;
+  const requestedEngine = config.physicsEngine;
+  if (requestedEngine === "wasmExact") {
+    engineNotice = "Loading Rust WASM physics…";
+    controls?.setEngineNotice(engineNotice);
+  }
+  const next = await createSimulation(config);
+  if (token !== replacementToken) {
+    next?.destroy?.();
+    return false;
+  }
+  simulation = next;
+  previous?.destroy?.();
+  controls?.setEngineNotice(engineNotice);
+  return true;
 }
 
 function resizeApp() {
@@ -123,14 +154,16 @@ function tick(now) {
   }
   decayPointerMotion(dt);
   const gpuState = simulation.getGpuRenderState?.();
+  const wasmState = simulation.getWasmRenderState?.();
   if (gpuState) renderer.renderGpu(gpuState, config, chamber.width, chamber.height);
+  else if (wasmState) renderer.renderWasm(wasmState, config, chamber.width, chamber.height);
   else renderer.render(simulation.particles, config, chamber.width, chamber.height);
   renderTouchIndicators();
   updateStats(now, dt);
   requestAnimationFrame(tick);
 }
 
-function applyConfig(nextConfig, rebuild) {
+async function applyConfig(nextConfig, rebuild) {
   const previousConfig = config;
   const wasTouchEnabled = config.touchEnabled;
   config = sanitizeConfig(nextConfig, interactionRadiusMaxFor(nextConfig));
@@ -142,7 +175,7 @@ function applyConfig(nextConfig, rebuild) {
   chamber = nextChamber;
   if (!config.touchEnabled && wasTouchEnabled) clearActivePointers();
   if (rebuild || engineChanged) {
-    replaceSimulation();
+    await replaceSimulation();
   } else {
     simulation.setConfig(config);
     if (chamberChanged) simulation.resize(chamber.width, chamber.height);
@@ -164,7 +197,7 @@ function handleAction(action) {
   if (action === "defaults") {
     clearStoredConfig();
     clearActivePointers();
-    applyConfig({ ...defaultConfig }, true);
+    void applyConfig({ ...defaultConfig }, true);
     return;
   }
   if (action === "step") {
