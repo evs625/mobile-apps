@@ -1,12 +1,13 @@
 {
   "app": "CatChum Mobile",
-  "build": 13,
+  "build": 14,
   "release": "2026-07-21",
   "features": [
     "fast-motion-response",
     "smooth-visual-motion",
     "swipe-pad",
     "network-first-update",
-    "fixed-motion-module-export"
+    "fixed-motion-module-export",
+    "fixed-eaten-chum-revival"
   ]
 }
