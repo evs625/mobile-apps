@@ -1,13 +1,15 @@
-export const CONFIG_STORAGE_KEY = "mobile-apps:particle-system:config:v4";
+export const CONFIG_STORAGE_KEY = "mobile-apps:particle-system:config:v5";
 export const PREVIOUS_CONFIG_STORAGE_KEYS = [
+  "mobile-apps:particle-system:config:v4",
   "mobile-apps:particle-system:config:v3",
   "mobile-apps:particle-system:config:v2",
 ];
 export const LEGACY_CONFIG_COOKIE_NAME = "webgl-particle-system-config-v1";
 
 export const PHYSICS_ENGINE_OPTIONS = [
-  { value: "cpu", label: "CPU exact (original)" },
-  { value: "gpuField", label: "GPU density field (fast)" },
+  { value: "cpu", label: "CPU exact (original JS)" },
+  { value: "wasmExact", label: "Rust WASM exact (fast)" },
+  { value: "gpuField", label: "GPU density field (approximate)" },
 ];
 
 export const TOUCH_MODE_OPTIONS = [
