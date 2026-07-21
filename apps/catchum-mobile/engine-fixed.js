@@ -33,6 +33,8 @@ export {
 
 const WALLS = new Set(["+", "-", "|", "/"]);
 const CAT_START = Object.freeze({ x: 24, y: 17 });
+const GHOST_EXIT = Object.freeze({ x: 24, y: 9 });
+const GHOST_RETURN_DOOR = Object.freeze({ x: 24, y: 10 });
 
 function key(x, y) {
   return `${x},${y}`;
@@ -129,10 +131,19 @@ export class CatChumGame extends OriginalCatChumGame {
       if (!ghost.released) continue;
       if (frightened && this.stepCount % 2 === 0 && !ghost.eaten) continue;
 
-      if (ghost.eaten && ghost.position.x === 24 && ghost.position.y === 11) {
+      // Invisible '/' cells are now true walls, so the old home target at
+      // (24,11) is unreachable. Revive eaten CHUMS at the reachable '=' door
+      // and place them back at the normal exit before their next movement tick.
+      if (
+        ghost.eaten
+        && ghost.position.x === GHOST_RETURN_DOOR.x
+        && ghost.position.y === GHOST_RETURN_DOOR.y
+      ) {
         ghost.eaten = false;
         ghost.released = true;
-        ghost.position = { x: 24, y: 9 };
+        ghost.position = { ...GHOST_EXIT };
+        ghost.direction = DIRECTIONS.LEFT;
+        continue;
       }
 
       const legal = availableDirections(this.tiles, ghost.position, "ghost");
@@ -144,7 +155,7 @@ export class CatChumGame extends OriginalCatChumGame {
       if (frightened && !ghost.eaten) {
         ghost.direction = pool[Math.floor(this.random() * pool.length)];
       } else {
-        const target = ghost.eaten ? { x: 24, y: 11 } : this.ghostTarget(ghost);
+        const target = ghost.eaten ? GHOST_RETURN_DOOR : this.ghostTarget(ghost);
         ghost.direction = chooseTargetDirection(this.tiles, ghost.position, ghost.direction, target, "ghost");
       }
       ghost.position = movePosition(ghost.position, ghost.direction);
