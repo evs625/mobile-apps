@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { defaultConfig, sanitizeConfig } from "../apps/particle-system/src/simulation/config.js";
+import { estimateDepositScale, touchModeCode } from "../apps/particle-system/src/simulation/GpuDensitySimulation.js";
 import { Simulation } from "../apps/particle-system/src/simulation/Simulation.js";
 import { applyTouchForce } from "../apps/particle-system/src/simulation/touch.js";
 
@@ -16,12 +17,15 @@ test("particle reset is deterministic for a fixed seed", () => {
   );
 });
 
-test("configuration sanitization clamps unsafe values", () => {
+test("configuration sanitization clamps unsafe values and validates GPU settings", () => {
   const config = sanitizeConfig({
     particleCount: 999999,
     radius: -5,
     damping: 2,
     interactionRadius: 9999,
+    physicsEngine: "invalid",
+    gpuFieldResolution: 999,
+    gpuFieldForceScale: 99,
     touchModePrimary: "invalid",
     touchPrimaryStrength: 99,
     touchRadius: 9999,
@@ -32,10 +36,29 @@ test("configuration sanitization clamps unsafe values", () => {
   assert.equal(config.radius, 1);
   assert.equal(config.damping, 0.995);
   assert.equal(config.interactionRadius, 320);
+  assert.equal(config.physicsEngine, "cpu");
+  assert.equal(config.gpuFieldResolution, 256);
+  assert.equal(config.gpuFieldForceScale, 3);
   assert.equal(config.touchModePrimary, "attract");
   assert.equal(config.touchPrimaryStrength, 1.5);
   assert.equal(config.touchRadius, 320);
   assert.equal(config.touchFalloff, 0.5);
+  assert.equal(sanitizeConfig({ physicsEngine: "gpuField", gpuFieldResolution: 111 }).gpuFieldResolution, 96);
+});
+
+test("density deposit scale decreases as expected neighbor count rises", () => {
+  const sparse = estimateDepositScale(500, 40, 1200, 800);
+  const dense = estimateDepositScale(5000, 60, 1200, 800);
+  assert.ok(sparse > dense);
+  assert.ok(dense >= 0.004 && dense <= 0.12);
+});
+
+test("GPU touch modes have stable shader codes", () => {
+  assert.deepEqual(
+    ["attract", "repel", "vortexClockwise", "vortexCounterclockwise", "stir", "brake"].map(touchModeCode),
+    [1, 2, 3, 4, 5, 6],
+  );
+  assert.equal(touchModeCode("invalid"), 0);
 });
 
 test("attract and repel touch modes apply opposite radial forces", () => {
