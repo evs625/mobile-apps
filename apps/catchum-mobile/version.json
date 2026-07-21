@@ -1,0 +1,11 @@
+{
+  "app": "CatChum Mobile",
+  "build": 12,
+  "release": "2026-07-21",
+  "features": [
+    "fast-motion-response",
+    "smooth-visual-motion",
+    "swipe-pad",
+    "network-first-update"
+  ]
+}
