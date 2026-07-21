@@ -22,6 +22,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo test --manifest-path apps/particle-system/wasm-src/Cargo.toml
+      - run: bash apps/particle-system/wasm-src/build.sh
+      - run: node apps/particle-system/wasm-src/smoke.mjs
       - run: npm test
 
   deploy:
@@ -32,6 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: bash apps/particle-system/wasm-src/build.sh
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

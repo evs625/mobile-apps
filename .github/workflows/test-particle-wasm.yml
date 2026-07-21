@@ -1,0 +1,33 @@
+name: Test Particle Rust WASM
+
+on:
+  pull_request:
+    paths:
+      - "apps/particle-system/**"
+      - "tests/particle-system.test.js"
+      - ".github/workflows/deploy-pages.yml"
+      - ".github/workflows/test-particle-wasm.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - run: cargo test --manifest-path apps/particle-system/wasm-src/Cargo.toml
+      - run: bash apps/particle-system/wasm-src/build.sh
+      - run: node apps/particle-system/wasm-src/smoke.mjs
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: particle-wasm-build
+          path: apps/particle-system/wasm/*.wasm
