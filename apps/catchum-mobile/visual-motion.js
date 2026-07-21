@@ -40,10 +40,10 @@ export function wrappedRenderPositions(position, width, height) {
   const yOffsets = [0];
 
   if (position.x < 0) xOffsets.push(width);
-  else if (position.x >= width) xOffsets.push(-width);
+  else if (position.x > width - 1) xOffsets.push(-width);
 
   if (position.y < 0) yOffsets.push(height);
-  else if (position.y >= height) yOffsets.push(-height);
+  else if (position.y > height - 1) yOffsets.push(-height);
 
   const positions = [];
   for (const xOffset of xOffsets) {
