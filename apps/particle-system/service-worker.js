@@ -1,4 +1,4 @@
-const CACHE_NAME = "particle-system-v5";
+const CACHE_NAME = "particle-system-v6";
 const APP_SHELL = [
   "./",
   "./index.html",
