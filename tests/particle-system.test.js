@@ -4,7 +4,10 @@ import test from "node:test";
 import { defaultConfig, sanitizeConfig } from "../apps/particle-system/src/simulation/config.js";
 import { estimateDepositScale, touchModeCode as gpuTouchModeCode } from "../apps/particle-system/src/simulation/GpuDensitySimulation.js";
 import { Simulation } from "../apps/particle-system/src/simulation/Simulation.js";
-import { touchModeCode as wasmTouchModeCode } from "../apps/particle-system/src/simulation/WasmExactSimulation.js";
+import {
+  applyTouchForcesToMemory,
+  touchModeCode as wasmTouchModeCode,
+} from "../apps/particle-system/src/simulation/WasmExactSimulation.js";
 import { applyTouchForce } from "../apps/particle-system/src/simulation/touch.js";
 
 test("particle reset is deterministic for a fixed seed", () => {
@@ -60,6 +63,44 @@ test("GPU and WASM touch modes use the same stable codes", () => {
   assert.deepEqual(modes.map(wasmTouchModeCode), [1, 2, 3, 4, 5, 6]);
   assert.equal(gpuTouchModeCode("invalid"), 0);
   assert.equal(wasmTouchModeCode("invalid"), 0);
+});
+
+test("WASM touch bridge modifies velocity memory with independent modes", () => {
+  const positions = new Float32Array([0, 0, 0, 0]);
+  const velocities = new Float32Array([0, 0, 2, 0]);
+  const config = {
+    ...defaultConfig,
+    touchEnabled: true,
+    touchRadius: 100,
+    touchFalloff: 1,
+  };
+  const applications = applyTouchForcesToMemory(
+    positions,
+    velocities,
+    2,
+    [
+      { x: 50, y: 0, vx: 0, vy: 0, mode: "attract", strength: 1 },
+      { x: 0, y: 50, vx: 0, vy: 0, mode: "repel", strength: 0.5 },
+    ],
+    config,
+    1,
+  );
+  assert.equal(applications, 4);
+  assert.ok(velocities[0] > 0);
+  assert.ok(velocities[1] < 0);
+  assert.ok(velocities[2] > 2);
+  assert.ok(velocities[3] < 0);
+
+  const beforeBrake = velocities[2];
+  applyTouchForcesToMemory(
+    positions,
+    velocities,
+    2,
+    [{ x: 0, y: 0, vx: 0, vy: 0, mode: "brake", strength: 1 }],
+    config,
+    1,
+  );
+  assert.ok(velocities[2] < beforeBrake);
 });
 
 test("attract and repel touch modes apply opposite radial forces", () => {
