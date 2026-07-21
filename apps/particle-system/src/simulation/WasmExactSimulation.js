@@ -1,6 +1,6 @@
 const MAX_TOUCHES = 8;
-const TOUCH_STRIDE = 6;
 const RENDER_STRIDE = 5 * 4;
+const EPSILON = 0.0001;
 
 export class WasmExactSimulation {
   engineName;
@@ -52,7 +52,7 @@ export class WasmExactSimulation {
     this.particleCount = this.exports.sim_particle_count();
     this.configure();
     this.invalidateViews();
-    this.updateDiagnostics();
+    this.updateDiagnostics(0);
   }
 
   setConfig(config) {
@@ -91,10 +91,11 @@ export class WasmExactSimulation {
       c.continuousHueMode ? 1 : 0,
       boundaryCode(c.boundaryMode),
       c.opacity,
-      c.touchEnabled ? 1 : 0,
+      0,
       c.touchRadius,
       c.touchFalloff,
     );
+    this.exports.sim_set_touch_count(0);
     this.invalidateViews();
   }
 
@@ -108,36 +109,39 @@ export class WasmExactSimulation {
   reset(seed = this.config.seed) {
     this.exports.sim_reset(seed, distributionCode(this.config.distribution));
     this.invalidateViews();
-    this.updateDiagnostics();
+    this.updateDiagnostics(0);
   }
 
   setTouchPoints(points) {
     this.touchPoints = this.config.touchEnabled ? points.slice(0, MAX_TOUCHES) : [];
-    const pointer = this.exports.sim_touch_ptr();
-    if (!pointer) {
-      this.exports.sim_set_touch_count(0);
-      return;
-    }
-    const view = new Float32Array(this.memory.buffer, pointer, MAX_TOUCHES * TOUCH_STRIDE);
-    view.fill(0);
-    for (let index = 0; index < this.touchPoints.length; index += 1) {
-      const touch = this.touchPoints[index];
-      const offset = index * TOUCH_STRIDE;
-      view[offset] = touch.x;
-      view[offset + 1] = touch.y;
-      view[offset + 2] = touch.vx;
-      view[offset + 3] = touch.vy;
-      view[offset + 4] = touchModeCode(touch.mode);
-      view[offset + 5] = touch.strength;
-    }
-    this.exports.sim_set_touch_count(this.touchPoints.length);
+    this.exports.sim_set_touch_count(0);
     this.diagnostics.touchPoints = this.touchPoints.length;
   }
 
   step(dt) {
-    this.exports.sim_step(dt);
+    const scaledDt = Math.min(2.5, Math.max(0, dt));
+    const touchApplications = this.applyTouchForces(scaledDt);
+    this.exports.sim_step(scaledDt);
     this.invalidateViewsIfMemoryGrew();
-    this.updateDiagnostics();
+    this.updateDiagnostics(touchApplications);
+  }
+
+  applyTouchForces(dt) {
+    if (!this.config.touchEnabled || this.touchPoints.length === 0 || dt <= 0) return 0;
+    const positionsPointer = this.exports.sim_positions_ptr();
+    const velocitiesPointer = this.exports.sim_velocities_ptr();
+    if (!positionsPointer || !velocitiesPointer) return 0;
+    const length = this.particleCount * 2;
+    const positions = new Float32Array(this.memory.buffer, positionsPointer, length);
+    const velocities = new Float32Array(this.memory.buffer, velocitiesPointer, length);
+    return applyTouchForcesToMemory(
+      positions,
+      velocities,
+      this.particleCount,
+      this.touchPoints,
+      this.config,
+      dt,
+    );
   }
 
   getWasmRenderState() {
@@ -166,12 +170,12 @@ export class WasmExactSimulation {
     };
   }
 
-  updateDiagnostics() {
+  updateDiagnostics(touchApplications = 0) {
     this.particleCount = this.exports.sim_particle_count();
     this.diagnostics.pairChecks = this.exports.sim_pair_checks();
     this.diagnostics.neighborCandidates = this.exports.sim_neighbor_candidates();
     this.diagnostics.touchPoints = this.touchPoints.length;
-    this.diagnostics.touchApplications = this.exports.sim_touch_applications();
+    this.diagnostics.touchApplications = touchApplications;
   }
 
   invalidateViews() {
@@ -189,6 +193,84 @@ export class WasmExactSimulation {
     this.exports.sim_destroy();
     this.invalidateViews();
   }
+}
+
+export function applyTouchForcesToMemory(
+  positions,
+  velocities,
+  particleCount,
+  touches,
+  config,
+  dt,
+) {
+  if (!config.touchEnabled || touches.length === 0 || dt <= 0) return 0;
+  const count = Math.min(particleCount, positions.length >> 1, velocities.length >> 1);
+  const radius = Math.max(EPSILON, config.touchRadius);
+  const radiusSquared = radius * radius;
+  const falloffPower = config.touchFalloff;
+  let applications = 0;
+
+  for (let particle = 0; particle < count; particle += 1) {
+    const offset = particle * 2;
+    const x = positions[offset];
+    const y = positions[offset + 1];
+    const vx = velocities[offset];
+    const vy = velocities[offset + 1];
+    let fx = 0;
+    let fy = 0;
+
+    for (const touch of touches) {
+      const dx = touch.x - x;
+      const dy = touch.y - y;
+      const distanceSquared = dx * dx + dy * dy;
+      if (distanceSquared > radiusSquared) continue;
+
+      applications += 1;
+      const distance = Math.max(EPSILON, Math.sqrt(distanceSquared));
+      const proximity = Math.max(0, 1 - distance / radius);
+      const strength = touch.strength * Math.pow(proximity, falloffPower);
+      const nx = dx / distance;
+      const ny = dy / distance;
+
+      switch (touch.mode) {
+        case "attract":
+          fx += nx * strength;
+          fy += ny * strength;
+          break;
+        case "repel":
+          fx -= nx * strength;
+          fy -= ny * strength;
+          break;
+        case "vortexClockwise":
+          fx += ny * strength;
+          fy -= nx * strength;
+          break;
+        case "vortexCounterclockwise":
+          fx -= ny * strength;
+          fy += nx * strength;
+          break;
+        case "stir": {
+          const movementScale = strength * 0.08;
+          fx += touch.vx * movementScale;
+          fy += touch.vy * movementScale;
+          break;
+        }
+        case "brake": {
+          const brakeScale = strength * 0.45;
+          fx -= vx * brakeScale;
+          fy -= vy * brakeScale;
+          break;
+        }
+        default:
+          applications -= 1;
+      }
+    }
+
+    velocities[offset] = vx + fx * dt;
+    velocities[offset + 1] = vy + fy * dt;
+  }
+
+  return applications;
 }
 
 async function loadBestModule() {
