@@ -175,7 +175,7 @@ export class Controls {
       const preservedSettings = Object.fromEntries(
         PRESERVED_SETTING_KEYS.map((key) => [key, this.config[key]]),
       );
-      this.onChange({ ...preset, ...preservedSettings, seed: this.config.seed }, true);
+      void this.onChange({ ...preset, ...preservedSettings, seed: this.config.seed }, true);
     });
     return this.section("Presets", select);
   }
@@ -186,7 +186,7 @@ export class Controls {
     for (const control of gpuControls) fragment.append(this.range(control));
     const help = document.createElement("p");
     help.className = "control-help";
-    help.textContent = "CPU exact keeps the original pairwise simulation. GPU density field approximates local interactions and is intended for large particle counts.";
+    help.textContent = "CPU exact is the original JavaScript engine. Rust WASM uses the same pairwise equations with a numeric spatial grid and SIMD when supported. GPU density field is fastest but approximate.";
     this.engineNoticeNode = document.createElement("p");
     this.engineNoticeNode.className = "engine-notice";
     this.engineNoticeNode.hidden = true;
@@ -253,7 +253,7 @@ export class Controls {
     input.addEventListener("input", () => {
       const next = { ...this.config, [definition.key]: Number(input.value) };
       output.textContent = formatValue(next[definition.key]);
-      this.onChange(next, Boolean(definition.rebuild));
+      void this.onChange(next, Boolean(definition.rebuild));
     });
     this.values.set(definition.key, input);
     label.append(span, output, input);
@@ -267,7 +267,7 @@ export class Controls {
     input.type = "checkbox";
     input.checked = Boolean(this.config[key]);
     input.addEventListener("change", () => {
-      this.onChange({ ...this.config, [key]: input.checked }, rebuild);
+      void this.onChange({ ...this.config, [key]: input.checked }, rebuild);
     });
     this.values.set(key, input);
     label.append(input, document.createTextNode(labelText));
@@ -290,7 +290,7 @@ export class Controls {
     }
     select.value = String(this.config[key]);
     select.addEventListener("change", () => {
-      this.onChange({ ...this.config, [key]: select.value }, rebuild);
+      void this.onChange({ ...this.config, [key]: select.value }, rebuild);
     });
     this.values.set(key, select);
     label.append(span, select);
