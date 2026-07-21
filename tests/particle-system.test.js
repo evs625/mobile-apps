@@ -2,22 +2,22 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { defaultConfig, sanitizeConfig } from "../apps/particle-system/src/simulation/config.js";
-import { estimateDepositScale, touchModeCode } from "../apps/particle-system/src/simulation/GpuDensitySimulation.js";
+import { estimateDepositScale, touchModeCode as gpuTouchModeCode } from "../apps/particle-system/src/simulation/GpuDensitySimulation.js";
 import { Simulation } from "../apps/particle-system/src/simulation/Simulation.js";
+import { touchModeCode as wasmTouchModeCode } from "../apps/particle-system/src/simulation/WasmExactSimulation.js";
 import { applyTouchForce } from "../apps/particle-system/src/simulation/touch.js";
 
 test("particle reset is deterministic for a fixed seed", () => {
   const config = { ...defaultConfig, particleCount: 80, seed: 12345 };
   const first = new Simulation(config, 640, 480);
   const second = new Simulation(config, 640, 480);
-
   assert.deepEqual(
     first.particles.slice(0, 12).map(({ x, y, vx, vy, hue }) => ({ x, y, vx, vy, hue })),
     second.particles.slice(0, 12).map(({ x, y, vx, vy, hue }) => ({ x, y, vx, vy, hue })),
   );
 });
 
-test("configuration sanitization clamps unsafe values and validates GPU settings", () => {
+test("configuration sanitization validates all physics engines", () => {
   const config = sanitizeConfig({
     particleCount: 999999,
     radius: -5,
@@ -31,7 +31,6 @@ test("configuration sanitization clamps unsafe values and validates GPU settings
     touchRadius: 9999,
     touchFalloff: 0,
   }, 320);
-
   assert.equal(config.particleCount, 5000);
   assert.equal(config.radius, 1);
   assert.equal(config.damping, 0.995);
@@ -43,6 +42,8 @@ test("configuration sanitization clamps unsafe values and validates GPU settings
   assert.equal(config.touchPrimaryStrength, 1.5);
   assert.equal(config.touchRadius, 320);
   assert.equal(config.touchFalloff, 0.5);
+  assert.equal(sanitizeConfig({ physicsEngine: "gpuField" }).physicsEngine, "gpuField");
+  assert.equal(sanitizeConfig({ physicsEngine: "wasmExact" }).physicsEngine, "wasmExact");
   assert.equal(sanitizeConfig({ physicsEngine: "gpuField", gpuFieldResolution: 111 }).gpuFieldResolution, 96);
 });
 
@@ -53,35 +54,24 @@ test("density deposit scale decreases as expected neighbor count rises", () => {
   assert.ok(dense >= 0.004 && dense <= 0.12);
 });
 
-test("GPU touch modes have stable shader codes", () => {
-  assert.deepEqual(
-    ["attract", "repel", "vortexClockwise", "vortexCounterclockwise", "stir", "brake"].map(touchModeCode),
-    [1, 2, 3, 4, 5, 6],
-  );
-  assert.equal(touchModeCode("invalid"), 0);
+test("GPU and WASM touch modes use the same stable codes", () => {
+  const modes = ["attract", "repel", "vortexClockwise", "vortexCounterclockwise", "stir", "brake"];
+  assert.deepEqual(modes.map(gpuTouchModeCode), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(modes.map(wasmTouchModeCode), [1, 2, 3, 4, 5, 6]);
+  assert.equal(gpuTouchModeCode("invalid"), 0);
+  assert.equal(wasmTouchModeCode("invalid"), 0);
 });
 
 test("attract and repel touch modes apply opposite radial forces", () => {
   const baseParticle = {
-    id: 1,
-    x: 0,
-    y: 0,
-    vx: 0,
-    vy: 0,
-    fx: 0,
-    fy: 0,
-    radius: 3,
-    hue: 0,
-    alpha: 1,
-    mass: 1,
+    id: 1, x: 0, y: 0, vx: 0, vy: 0, fx: 0, fy: 0,
+    radius: 3, hue: 0, alpha: 1, mass: 1,
   };
   const config = { ...defaultConfig, touchRadius: 100, touchFalloff: 1 };
   const touch = { x: 50, y: 0, vx: 0, vy: 0, strength: 1 };
-
   const attracted = { ...baseParticle };
   applyTouchForce(attracted, { ...touch, mode: "attract" }, config);
   assert.ok(attracted.fx > 0);
-
   const repelled = { ...baseParticle };
   applyTouchForce(repelled, { ...touch, mode: "repel" }, config);
   assert.ok(repelled.fx < 0);
@@ -104,13 +94,11 @@ test("multi-touch disturbances can use independent modes", () => {
   particle.y = 150;
   particle.vx = 0;
   particle.vy = 0;
-
   simulation.setTouchPoints([
     { x: 250, y: 150, vx: 0, vy: 0, mode: "attract", strength: 0.5 },
     { x: 150, y: 250, vx: 0, vy: 0, mode: "repel", strength: 0.5 },
   ]);
   simulation.step(1);
-
   assert.ok(particle.vx > 0);
   assert.ok(particle.vy < 0);
   assert.equal(simulation.diagnostics.touchPoints, 2);
@@ -128,13 +116,9 @@ test("touch points do not change behavior while touch interactions are disabled"
   };
   const control = new Simulation(config, 300, 300);
   const touched = new Simulation(config, 300, 300);
-  touched.setTouchPoints([
-    { x: 150, y: 150, vx: 20, vy: 0, mode: "stir", strength: 1 },
-  ]);
-
+  touched.setTouchPoints([{ x: 150, y: 150, vx: 20, vy: 0, mode: "stir", strength: 1 }]);
   control.step(1);
   touched.step(1);
-
   assert.deepEqual(
     { x: touched.particles[0].x, y: touched.particles[0].y, vx: touched.particles[0].vx, vy: touched.particles[0].vy },
     { x: control.particles[0].x, y: control.particles[0].y, vx: control.particles[0].vx, vy: control.particles[0].vy },
