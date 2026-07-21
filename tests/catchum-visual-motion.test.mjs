@@ -21,14 +21,22 @@ test("late queued turns consume only the remaining part of the interval", () => 
   );
 });
 
-test("portal movement renders a matching copy on the opposite edge", () => {
+test("portal movement renders a matching copy on every opposite edge", () => {
   assert.deepEqual(
     wrappedRenderPositions({ x: -0.5, y: 11 }, 49, 23),
     [{ x: -0.5, y: 11 }, { x: 48.5, y: 11 }],
   );
   assert.deepEqual(
+    wrappedRenderPositions({ x: 48.5, y: 11 }, 49, 23),
+    [{ x: 48.5, y: 11 }, { x: -0.5, y: 11 }],
+  );
+  assert.deepEqual(
     wrappedRenderPositions({ x: 22, y: -0.25 }, 49, 23),
     [{ x: 22, y: -0.25 }, { x: 22, y: 22.75 }],
+  );
+  assert.deepEqual(
+    wrappedRenderPositions({ x: 22, y: 22.5 }, 49, 23),
+    [{ x: 22, y: 22.5 }, { x: 22, y: -0.5 }],
   );
 });
 
