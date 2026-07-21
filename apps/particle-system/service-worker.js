@@ -1,4 +1,4 @@
-const CACHE_NAME = "particle-system-v4";
+const CACHE_NAME = "particle-system-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -13,12 +13,15 @@ const APP_SHELL = [
   "./src/simulation/GpuDensitySimulation.js",
   "./src/simulation/Simulation.js",
   "./src/simulation/SpatialHash.js",
+  "./src/simulation/WasmExactSimulation.js",
   "./src/simulation/config.js",
   "./src/simulation/force.js",
   "./src/simulation/math.js",
   "./src/simulation/touch.js",
   "./src/simulation/types.js",
   "./src/ui/Controls.js",
+  "./wasm/physics_scalar.wasm",
+  "./wasm/physics_simd.wasm",
 ];
 
 self.addEventListener("install", (event) => {
