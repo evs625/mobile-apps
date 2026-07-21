@@ -60,9 +60,7 @@ export class WebGLRenderer {
   }
 
   render(particles, config, chamberWidth, chamberHeight) {
-    const gl = this.gl;
     this.beginFrame(config);
-    gl.useProgram(this.particleProgram);
     const requiredLength = particles.length * FLOATS_PER_CPU_PARTICLE;
     const data = requiredLength <= this.particleData.length
       ? this.particleData
@@ -76,14 +74,25 @@ export class WebGLRenderer {
       data[offset + 3] = particle.radius;
       data[offset + 4] = config.opacity;
     }
+    this.renderPacked(data.subarray(0, requiredLength), particles.length, config, chamberWidth, chamberHeight);
+  }
+
+  renderWasm(state, config, chamberWidth, chamberHeight) {
+    this.beginFrame(config);
+    this.renderPacked(state.data, state.count, config, chamberWidth, chamberHeight, state);
+  }
+
+  renderPacked(data, count, config, chamberWidth, chamberHeight, layout = null) {
+    const gl = this.gl;
+    gl.useProgram(this.particleProgram);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.particleBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, requiredLength), gl.DYNAMIC_DRAW);
-    const stride = FLOATS_PER_CPU_PARTICLE * 4;
-    bindAttribute(gl, this.particleLocations.position, 2, stride, 0);
-    bindAttribute(gl, this.particleLocations.hue, 1, stride, 2 * 4);
-    bindAttribute(gl, this.particleLocations.radius, 1, stride, 3 * 4);
-    bindAttribute(gl, this.particleLocations.alpha, 1, stride, 4 * 4);
-    this.finishParticleDraw(particles.length, config, chamberWidth, chamberHeight);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+    const stride = layout?.stride ?? FLOATS_PER_CPU_PARTICLE * 4;
+    bindAttribute(gl, this.particleLocations.position, 2, stride, layout?.positionOffset ?? 0);
+    bindAttribute(gl, this.particleLocations.hue, 1, stride, layout?.hueOffset ?? 2 * 4);
+    bindAttribute(gl, this.particleLocations.radius, 1, stride, layout?.radiusOffset ?? 3 * 4);
+    bindAttribute(gl, this.particleLocations.alpha, 1, stride, layout?.alphaOffset ?? 4 * 4);
+    this.finishParticleDraw(count, config, chamberWidth, chamberHeight);
   }
 
   renderGpu(state, config, chamberWidth, chamberHeight) {
