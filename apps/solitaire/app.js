@@ -19,7 +19,7 @@ import {
   undo
 } from './engine.js';
 
-const APP_VERSION = '1.0.3';
+const APP_VERSION = '1.0.4';
 const STORAGE = Object.freeze({
   preferences: 'solitaire:v1:preferences',
   session: 'solitaire:v1:session',
@@ -72,7 +72,7 @@ let lastTap = { key: '', time: 0 };
 let dragState = null;
 let activeSnapTarget = null;
 
-$('#versionValue').textContent = APP_VERSION;
+$$('[data-version-value]').forEach((element) => { element.textContent = APP_VERSION; });
 
 function loadJson(key, fallback) {
   try {
