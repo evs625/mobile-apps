@@ -19,7 +19,7 @@ import {
   undo
 } from './engine.js';
 
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3';
 const STORAGE = Object.freeze({
   preferences: 'solitaire:v1:preferences',
   session: 'solitaire:v1:session',
@@ -67,6 +67,7 @@ let timerStartedAt = null;
 let settingsMode = 'new';
 let forceInitialDeal = false;
 let autoFinishing = false;
+let moveAnimating = false;
 let lastTap = { key: '', time: 0 };
 let dragState = null;
 let activeSnapTarget = null;
@@ -362,12 +363,13 @@ function renderHud() {
   scoreValue.textContent = game ? String(game.score) : '0';
   movesValue.textContent = game ? String(game.moves) : '0';
   timeValue.textContent = formatTime(game ? elapsedNow() : 0);
-  undoButton.disabled = !game || game.won || autoFinishing || !canUndo(game);
-  newGameButton.disabled = autoFinishing;
-  menuButton.disabled = autoFinishing;
+  const interactionLocked = autoFinishing || moveAnimating;
+  undoButton.disabled = !game || game.won || interactionLocked || !canUndo(game);
+  newGameButton.disabled = interactionLocked;
+  menuButton.disabled = interactionLocked;
   const showFinish = Boolean(game && !game.won && game.config.autoFinish === 'button' && canAutoFinish(game));
   autoFinishButton.hidden = !showFinish;
-  autoFinishButton.disabled = autoFinishing;
+  autoFinishButton.disabled = interactionLocked;
 }
 
 function render() {
@@ -394,7 +396,7 @@ function afterSuccessfulAction(wasWon) {
 }
 
 function performAction(action, message = '') {
-  if (!game || autoFinishing) return false;
+  if (!game || autoFinishing || moveAnimating) return false;
   const wasWon = game.won;
   const ok = action();
   if (!ok) return false;
@@ -450,7 +452,7 @@ function onSourceKeyDown(event) {
 }
 
 function onCardPointerDown(event) {
-  if (!game || game.won || autoFinishing || event.button > 0) return;
+  if (!game || game.won || autoFinishing || moveAnimating || event.button > 0) return;
   const source = readSource(event.currentTarget);
   if (!sourceIsMovable(source)) return;
 
@@ -551,6 +553,125 @@ function updateSnapTarget(source, x, y) {
   activeSnapTarget?.element.classList.add('snap-target');
 }
 
+function reducedMotionPreferred() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+async function wiggleRejectedCard(element) {
+  if (!element || moveAnimating) return;
+  moveAnimating = true;
+  selectedSource = null;
+  element.classList.remove('selected');
+  renderHud();
+  announce('That card cannot move to a foundation yet.');
+
+  if (!reducedMotionPreferred() && typeof element.animate === 'function') {
+    const animation = element.animate([
+      { transform: 'translateX(0)' },
+      { transform: 'translateX(-6px)', offset: 0.2 },
+      { transform: 'translateX(6px)', offset: 0.4 },
+      { transform: 'translateX(-4px)', offset: 0.6 },
+      { transform: 'translateX(4px)', offset: 0.8 },
+      { transform: 'translateX(0)' }
+    ], { duration: 260, easing: 'ease-out' });
+    try { await animation.finished; } catch { /* animation cancelled */ }
+  }
+
+  moveAnimating = false;
+  render();
+}
+
+async function flyDoubleTapCardToFoundation(source, element) {
+  if (!game || !element || moveAnimating || autoFinishing) return;
+  const cards = sourceCards(source);
+  const card = cards.length === 1 ? cards[0] : null;
+  if (!card || !canMoveToFoundation(game, source)) {
+    await wiggleRejectedCard(element);
+    return;
+  }
+
+  const foundation = foundationPiles.find((pile) => pile.dataset.foundation === card.suit);
+  if (!foundation) {
+    await wiggleRejectedCard(element);
+    return;
+  }
+
+  const targetGame = game;
+  const generation = gameGeneration;
+  const wasWon = targetGame.won;
+  const start = element.getBoundingClientRect();
+  const destination = foundation.getBoundingClientRect();
+  const dx = destination.left + (destination.width - start.width) / 2 - start.left;
+  const dy = destination.top + (destination.height - start.height) / 2 - start.top;
+
+  moveAnimating = true;
+  selectedSource = null;
+  element.classList.remove('selected');
+  renderHud();
+
+  const flight = element.cloneNode(true);
+  flight.classList.remove('selected');
+  flight.removeAttribute('data-source');
+  flight.tabIndex = -1;
+  flight.setAttribute('aria-hidden', 'true');
+  if ('disabled' in flight) flight.disabled = true;
+  Object.assign(flight.style, {
+    position: 'fixed',
+    inset: 'auto',
+    left: `${start.left}px`,
+    top: `${start.top}px`,
+    width: `${start.width}px`,
+    height: `${start.height}px`,
+    margin: '0',
+    zIndex: '2200',
+    pointerEvents: 'none',
+    transformOrigin: 'center center',
+    willChange: 'transform'
+  });
+  document.body.append(flight);
+  element.style.visibility = 'hidden';
+
+  if (!reducedMotionPreferred() && typeof flight.animate === 'function') {
+    const animation = flight.animate([
+      { transform: 'translate3d(0, 0, 0) scale(1)', offset: 0 },
+      { transform: `translate3d(${dx * 0.55}px, ${dy * 0.55 - 18}px, 0) scale(.98)`, offset: 0.55 },
+      { transform: `translate3d(${dx}px, ${dy}px, 0) scale(.96)`, offset: 1 }
+    ], { duration: 340, easing: 'cubic-bezier(.22,.78,.25,1)', fill: 'forwards' });
+    try { await animation.finished; } catch { /* animation cancelled */ }
+  }
+
+  const stillCurrent = game === targetGame && gameGeneration === generation;
+  if (!stillCurrent) {
+    flight.remove();
+    element.style.visibility = '';
+    moveAnimating = false;
+    render();
+    return;
+  }
+
+  const moved = moveToFoundation(targetGame, source);
+  flight.remove();
+  moveAnimating = false;
+
+  if (moved) {
+    announce(`${cardAria(card)} moved to foundation.`);
+    afterSuccessfulAction(wasWon);
+  } else {
+    element.style.visibility = '';
+    render();
+  }
+}
+
+async function handleDoubleTapFeedback(source, element) {
+  if (!game || moveAnimating || autoFinishing) return;
+  const cards = sourceCards(source);
+  if (cards.length === 1 && canMoveToFoundation(game, source)) {
+    await flyDoubleTapCardToFoundation(source, element);
+  } else {
+    await wiggleRejectedCard(element);
+  }
+}
+
 window.addEventListener('pointermove', (event) => {
   if (!dragState || event.pointerId !== dragState.pointerId) return;
   dragState.lastX = event.clientX;
@@ -593,8 +714,9 @@ window.addEventListener('pointerup', (event) => {
   const isDoubleTap = lastTap.key === key && now - lastTap.time <= 330;
   lastTap = { key, time: now };
 
-  if (isDoubleTap && tryMoveToFoundation(current.source)) {
+  if (isDoubleTap) {
     lastTap = { key: '', time: 0 };
+    void handleDoubleTapFeedback(current.source, current.element);
     return;
   }
 
@@ -612,7 +734,7 @@ window.addEventListener('pointercancel', () => {
 });
 
 stockPile.addEventListener('click', () => {
-  if (!game || autoFinishing) return;
+  if (!game || autoFinishing || moveAnimating) return;
   const recycling = game.stock.length === 0;
   const count = Math.min(game.config.drawCount, game.stock.length);
   performAction(() => drawStock(game), recycling ? 'Stock redealt.' : `Drew ${count} card${count === 1 ? '' : 's'}.`);
@@ -647,7 +769,7 @@ foundationPiles.forEach((pile) => {
 });
 
 undoButton.addEventListener('click', () => {
-  if (!game || autoFinishing) return;
+  if (!game || autoFinishing || moveAnimating) return;
   if (performAction(() => undo(game), 'Move undone.')) saveSession();
 });
 
@@ -656,7 +778,7 @@ autoFinishButton.addEventListener('click', () => runAutoFinish());
 async function runAutoFinish() {
   const targetGame = game;
   const generation = gameGeneration;
-  if (!targetGame || targetGame.won || autoFinishing || !canAutoFinish(targetGame)) return;
+  if (!targetGame || targetGame.won || autoFinishing || moveAnimating || !canAutoFinish(targetGame)) return;
   const isCurrent = () => game === targetGame && gameGeneration === generation;
 
   autoFinishing = true;
@@ -691,7 +813,7 @@ async function runAutoFinish() {
 }
 
 function maybeAutomaticFinish() {
-  if (!game || autoFinishing || game.won) return;
+  if (!game || autoFinishing || moveAnimating || game.won) return;
   if (game.config.autoFinish === 'automatic' && canAutoFinish(game)) {
     window.setTimeout(() => runAutoFinish(), 180);
   }
@@ -738,7 +860,7 @@ function openSettings(mode = 'new', force = false) {
 }
 
 function requestNewGame() {
-  if (autoFinishing) return;
+  if (autoFinishing || moveAnimating) return;
   if (game && !game.won && game.moves > 0) {
     const abandon = window.confirm('Abandon the current game and start a new deal?');
     if (!abandon) return;
