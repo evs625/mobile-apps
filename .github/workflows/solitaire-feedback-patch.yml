@@ -1,0 +1,83 @@
+name: Apply Solitaire feedback animations
+
+on:
+  push:
+    branches: [feat/solitaire-doubletap-feedback]
+    paths:
+      - '.github/workflows/solitaire-feedback-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/solitaire-doubletap-feedback
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Patch double-tap feedback
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app_path = Path('apps/solitaire/app.js')
+          text = app_path.read_text()
+
+          def replace_once(old, new):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected one match, found {count}: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+
+          replace_once("const APP_VERSION = '1.0.2';", "const APP_VERSION = '1.0.3';")
+          replace_once("let autoFinishing = false;\nlet lastTap", "let autoFinishing = false;\nlet moveAnimating = false;\nlet lastTap")
+
+          replace_once(
+          """  undoButton.disabled = !game || game.won || autoFinishing || !canUndo(game);\n  newGameButton.disabled = autoFinishing;\n  menuButton.disabled = autoFinishing;\n  const showFinish = Boolean(game && !game.won && game.config.autoFinish === 'button' && canAutoFinish(game));\n  autoFinishButton.hidden = !showFinish;\n  autoFinishButton.disabled = autoFinishing;""",
+          """  const interactionLocked = autoFinishing || moveAnimating;\n  undoButton.disabled = !game || game.won || interactionLocked || !canUndo(game);\n  newGameButton.disabled = interactionLocked;\n  menuButton.disabled = interactionLocked;\n  const showFinish = Boolean(game && !game.won && game.config.autoFinish === 'button' && canAutoFinish(game));\n  autoFinishButton.hidden = !showFinish;\n  autoFinishButton.disabled = interactionLocked;""")
+
+          replace_once("if (!game || autoFinishing) return false;", "if (!game || autoFinishing || moveAnimating) return false;")
+          replace_once("if (!game || game.won || autoFinishing || event.button > 0) return;", "if (!game || game.won || autoFinishing || moveAnimating || event.button > 0) return;")
+
+          marker = """function updateSnapTarget(source, x, y) {\n  const next = findSnapTarget(source, x, y);\n  if (activeSnapTarget?.element === next?.element) return;\n  clearSnapTarget();\n  activeSnapTarget = next;\n  activeSnapTarget?.element.classList.add('snap-target');\n}\n\n"""
+          helpers = marker + """function reducedMotionPreferred() {\n  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;\n}\n\nasync function wiggleRejectedCard(element) {\n  if (!element || moveAnimating) return;\n  moveAnimating = true;\n  selectedSource = null;\n  element.classList.remove('selected');\n  renderHud();\n  announce('That card cannot move to a foundation yet.');\n\n  if (!reducedMotionPreferred() && typeof element.animate === 'function') {\n    const animation = element.animate([\n      { transform: 'translateX(0)' },\n      { transform: 'translateX(-6px)', offset: 0.2 },\n      { transform: 'translateX(6px)', offset: 0.4 },\n      { transform: 'translateX(-4px)', offset: 0.6 },\n      { transform: 'translateX(4px)', offset: 0.8 },\n      { transform: 'translateX(0)' }\n    ], { duration: 260, easing: 'ease-out' });\n    try { await animation.finished; } catch { /* animation cancelled */ }\n  }\n\n  moveAnimating = false;\n  render();\n}\n\nasync function flyDoubleTapCardToFoundation(source, element) {\n  if (!game || !element || moveAnimating || autoFinishing) return;\n  const cards = sourceCards(source);\n  const card = cards.length === 1 ? cards[0] : null;\n  if (!card || !canMoveToFoundation(game, source)) {\n    await wiggleRejectedCard(element);\n    return;\n  }\n\n  const foundation = foundationPiles.find((pile) => pile.dataset.foundation === card.suit);\n  if (!foundation) {\n    await wiggleRejectedCard(element);\n    return;\n  }\n\n  const targetGame = game;\n  const generation = gameGeneration;\n  const wasWon = targetGame.won;\n  const start = element.getBoundingClientRect();\n  const destination = foundation.getBoundingClientRect();\n  const dx = destination.left + (destination.width - start.width) / 2 - start.left;\n  const dy = destination.top + (destination.height - start.height) / 2 - start.top;\n\n  moveAnimating = true;\n  selectedSource = null;\n  element.classList.remove('selected');\n  renderHud();\n\n  const flight = element.cloneNode(true);\n  flight.classList.remove('selected');\n  flight.removeAttribute('data-source');\n  flight.tabIndex = -1;\n  flight.setAttribute('aria-hidden', 'true');\n  if ('disabled' in flight) flight.disabled = true;\n  Object.assign(flight.style, {\n    position: 'fixed',\n    inset: 'auto',\n    left: `${start.left}px`,\n    top: `${start.top}px`,\n    width: `${start.width}px`,\n    height: `${start.height}px`,\n    margin: '0',\n    zIndex: '2200',\n    pointerEvents: 'none',\n    transformOrigin: 'center center',\n    willChange: 'transform'\n  });\n  document.body.append(flight);\n  element.style.visibility = 'hidden';\n\n  if (!reducedMotionPreferred() && typeof flight.animate === 'function') {\n    const animation = flight.animate([\n      { transform: 'translate3d(0, 0, 0) scale(1)', offset: 0 },\n      { transform: `translate3d(${dx * 0.55}px, ${dy * 0.55 - 18}px, 0) scale(.98)`, offset: 0.55 },\n      { transform: `translate3d(${dx}px, ${dy}px, 0) scale(.96)`, offset: 1 }\n    ], { duration: 340, easing: 'cubic-bezier(.22,.78,.25,1)', fill: 'forwards' });\n    try { await animation.finished; } catch { /* animation cancelled */ }\n  }\n\n  const stillCurrent = game === targetGame && gameGeneration === generation;\n  if (!stillCurrent) {\n    flight.remove();\n    element.style.visibility = '';\n    moveAnimating = false;\n    render();\n    return;\n  }\n\n  const moved = moveToFoundation(targetGame, source);\n  flight.remove();\n  moveAnimating = false;\n\n  if (moved) {\n    announce(`${cardAria(card)} moved to foundation.`);\n    afterSuccessfulAction(wasWon);\n  } else {\n    element.style.visibility = '';\n    render();\n  }\n}\n\nasync function handleDoubleTapFeedback(source, element) {\n  if (!game || moveAnimating || autoFinishing) return;\n  const cards = sourceCards(source);\n  if (cards.length === 1 && canMoveToFoundation(game, source)) {\n    await flyDoubleTapCardToFoundation(source, element);\n  } else {\n    await wiggleRejectedCard(element);\n  }\n}\n\n"""
+          replace_once(marker, helpers)
+
+          replace_once(
+          """  if (isDoubleTap && tryMoveToFoundation(current.source)) {\n    lastTap = { key: '', time: 0 };\n    return;\n  }\n\n  if (game.config.controlMode === 'tap' || game.config.controlMode === 'both') handleTapSource(current.source);""",
+          """  if (isDoubleTap) {\n    lastTap = { key: '', time: 0 };\n    void handleDoubleTapFeedback(current.source, current.element);\n    return;\n  }\n\n  if (game.config.controlMode === 'tap' || game.config.controlMode === 'both') handleTapSource(current.source);""")
+
+          replace_once("if (!game || autoFinishing) return;\n  const recycling", "if (!game || autoFinishing || moveAnimating) return;\n  const recycling")
+          replace_once("if (!game || autoFinishing) return;\n  if (performAction(() => undo(game)", "if (!game || autoFinishing || moveAnimating) return;\n  if (performAction(() => undo(game)")
+          replace_once("if (!targetGame || targetGame.won || autoFinishing || !canAutoFinish(targetGame)) return;", "if (!targetGame || targetGame.won || autoFinishing || moveAnimating || !canAutoFinish(targetGame)) return;")
+          replace_once("if (!game || autoFinishing || game.won) return;", "if (!game || autoFinishing || moveAnimating || game.won) return;")
+          replace_once("function requestNewGame() {\n  if (autoFinishing) return;", "function requestNewGame() {\n  if (autoFinishing || moveAnimating) return;")
+
+          app_path.write_text(text)
+
+          sw = Path('apps/solitaire/service-worker.js')
+          sw_text = sw.read_text()
+          if "solitaire-v1.0.2" not in sw_text:
+              raise SystemExit('Expected v1.0.2 service worker cache')
+          sw.write_text(sw_text.replace('solitaire-v1.0.2', 'solitaire-v1.0.3', 1))
+
+          test_path = Path('tests/solitaire-ui-feedback.test.js')
+          test_path.write_text("""import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport fs from 'node:fs';\n\nconst app = fs.readFileSync(new URL('../apps/solitaire/app.js', import.meta.url), 'utf8');\nconst sw = fs.readFileSync(new URL('../apps/solitaire/service-worker.js', import.meta.url), 'utf8');\n\ntest('double-tap feedback includes success flight and rejection wiggle', () => {\n  assert.match(app, /flyDoubleTapCardToFoundation/);\n  assert.match(app, /wiggleRejectedCard/);\n  assert.match(app, /duration: 340/);\n  assert.match(app, /duration: 260/);\n  assert.match(app, /void handleDoubleTapFeedback/);\n});\n\ntest('feedback animation locks interactions and bumps PWA version', () => {\n  assert.match(app, /let moveAnimating = false/);\n  assert.match(app, /APP_VERSION = '1\\.0\\.3'/);\n  assert.match(sw, /solitaire-v1\\.0\\.3/);\n});\n""")
+          PY
+
+          node --check apps/solitaire/app.js
+          node --check apps/solitaire/service-worker.js
+          npm test
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add apps/solitaire/app.js apps/solitaire/service-worker.js tests/solitaire-ui-feedback.test.js
+          git rm .github/workflows/solitaire-feedback-patch.yml
+          git commit -m 'Add Solitaire double-tap feedback'
+          git push origin HEAD:feat/solitaire-doubletap-feedback
