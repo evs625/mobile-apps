@@ -43,14 +43,16 @@ test('version 2 persistence compacts unlimited undo history and restores it', ()
 
 test('legacy version 1 saves remain resumable after persistence upgrade', () => {
   const game = newGame({ drawCount: 3, recycleLimit: 2, undoLimit: 5 }, () => 0.618034);
+  const legacyHistory = [legacyCore(game)];
   drawStock(game);
+  legacyHistory.push(legacyCore(game));
   drawStock(game);
 
   const legacy = {
     version: 1,
     state: legacyCore(game),
     undosUsed: game.undosUsed,
-    history: game.history.map(legacyCore)
+    history: legacyHistory
   };
 
   const restored = deserializeGame(legacy);
