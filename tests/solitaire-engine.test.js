@@ -193,14 +193,23 @@ test('undo disabled stores no snapshots', () => {
   assert.equal(canUndo(game), false);
 });
 
-test('auto-finish is offered only with no stock/waste and all tableau cards face up', () => {
+test('auto-finish requires an exposed foundation-only finish with empty stock and waste', () => {
   const game = minimalState();
-  game.tableau[0] = [card('clubs', 1)];
+  for (const suit of SUITS) {
+    game.foundations[suit] = Array.from({ length: 12 }, (_, i) => card(suit, i + 1));
+  }
+  game.tableau[0] = [card('clubs', 13)];
+  game.tableau[1] = [card('diamonds', 13)];
+  game.tableau[2] = [card('hearts', 13)];
+  game.tableau[3] = [card('spades', 13)];
   assert.equal(canAutoFinish(game), true);
-  game.stock = [card('spades', 1, false)];
+
+  game.stock = [card('clubs', 13, false)];
+  game.tableau[0] = [];
   assert.equal(canAutoFinish(game), false);
+
   game.stock = [];
-  game.tableau[0] = [card('clubs', 2, false)];
+  game.tableau[0] = [card('clubs', 13, false)];
   assert.equal(canAutoFinish(game), false);
 });
 
