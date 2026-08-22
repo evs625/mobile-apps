@@ -70,3 +70,20 @@ test('malformed compact undo history rejects the saved game', () => {
   payload.history[0][0][0] = 999;
   assert.equal(deserializeGame(payload), null);
 });
+
+test('sparse undo history is rejected for both persisted versions', () => {
+  const game = newGame({}, () => 0.5);
+  drawStock(game);
+
+  const compact = JSON.parse(serializeGame(game));
+  compact.history = new Array(1);
+  assert.equal(deserializeGame(compact), null);
+
+  const legacy = {
+    version: 1,
+    state: legacyCore(game),
+    undosUsed: game.undosUsed,
+    history: new Array(1)
+  };
+  assert.equal(deserializeGame(legacy), null);
+});
