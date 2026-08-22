@@ -465,10 +465,12 @@ export function deserializeGame(serialized) {
 
     let history = [];
     if (Array.isArray(payload.history)) {
+      const persistedHistory = Array.from(payload.history);
+      if (persistedHistory.some((item) => item === undefined)) return null;
       if (payload.version === 2) {
-        history = payload.history.map((item) => packHistorySnapshot(unpackHistorySnapshot(item, config)));
+        history = persistedHistory.map((item) => packHistorySnapshot(unpackHistorySnapshot(item, config)));
       } else {
-        history = payload.history.map((item) => {
+        history = persistedHistory.map((item) => {
           const restored = cloneCoreState({ ...item, config: normalizeConfig(item.config ?? config) });
           if (!validateState(restored)) throw new Error('Invalid legacy history');
           return packHistorySnapshot(restored);
