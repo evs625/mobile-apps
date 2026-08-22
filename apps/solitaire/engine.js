@@ -338,9 +338,33 @@ export function undo(state) {
   return true;
 }
 
+function foundationOnlyCompletionIsForced(state) {
+  const foundationRanks = Object.fromEntries(SUITS.map((suit) => [suit, state.foundations[suit].length]));
+  const tableauTops = state.tableau.map((column) => column.length - 1);
+  let remaining = tableauTops.reduce((sum, index) => sum + index + 1, 0);
+  let progressed = true;
+
+  while (remaining > 0 && progressed) {
+    progressed = false;
+    for (let column = 0; column < tableauTops.length; column += 1) {
+      const index = tableauTops[column];
+      if (index < 0) continue;
+      const card = state.tableau[column][index];
+      if (card.rank !== foundationRanks[card.suit] + 1) continue;
+      foundationRanks[card.suit] += 1;
+      tableauTops[column] -= 1;
+      remaining -= 1;
+      progressed = true;
+    }
+  }
+
+  return remaining === 0 && SUITS.every((suit) => foundationRanks[suit] === 13);
+}
+
 export function canAutoFinish(state) {
   if (state.won || state.stock.length > 0 || state.waste.length > 0) return false;
-  return state.tableau.every((column) => column.every((card) => card.faceUp));
+  if (!state.tableau.every((column) => column.every((card) => card.faceUp))) return false;
+  return foundationOnlyCompletionIsForced(state);
 }
 
 function availableFoundationSource(state) {
@@ -384,19 +408,17 @@ export function deserializeGame(serialized) {
   let payload;
   try {
     payload = typeof serialized === 'string' ? JSON.parse(serialized) : serialized;
+    if (!payload || payload.version !== 1 || !payload.state) return null;
+    const candidate = {
+      version: 1,
+      ...cloneCoreState({ ...payload.state, config: normalizeConfig(payload.state.config) }),
+      undosUsed: Number.isInteger(payload.undosUsed) && payload.undosUsed >= 0 ? payload.undosUsed : 0,
+      history: Array.isArray(payload.history) ? payload.history.map((item) => cloneCoreState({ ...item, config: normalizeConfig(item.config) })) : []
+    };
+    return validateState(candidate) ? candidate : null;
   } catch {
     return null;
   }
-
-  if (!payload || payload.version !== 1 || !payload.state) return null;
-  const candidate = {
-    version: 1,
-    ...cloneCoreState({ ...payload.state, config: normalizeConfig(payload.state.config) }),
-    undosUsed: Number.isInteger(payload.undosUsed) && payload.undosUsed >= 0 ? payload.undosUsed : 0,
-    history: Array.isArray(payload.history) ? payload.history.map((item) => cloneCoreState({ ...item, config: normalizeConfig(item.config) })) : []
-  };
-
-  return validateState(candidate) ? candidate : null;
 }
 
 export function validateState(state) {
