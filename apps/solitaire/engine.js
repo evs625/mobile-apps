@@ -73,6 +73,55 @@ function cloneCoreState(state) {
   };
 }
 
+function packCard(card) {
+  const suitIndex = SUITS.indexOf(card.suit);
+  return (card.faceUp ? 52 : 0) + suitIndex * 13 + (card.rank - 1);
+}
+
+function unpackCard(code) {
+  if (!Number.isInteger(code) || code < 0 || code > 103) throw new Error('Invalid packed card');
+  const faceUp = code >= 52;
+  const base = code % 52;
+  const suit = SUITS[Math.floor(base / 13)];
+  const rank = (base % 13) + 1;
+  return { id: `${suit}-${rank}`, suit, rank, faceUp };
+}
+
+function packHistorySnapshot(state) {
+  return [
+    state.stock.map(packCard),
+    state.waste.map(packCard),
+    state.tableau.map((column) => column.map(packCard)),
+    SUITS.map((suit) => state.foundations[suit].map(packCard)),
+    state.score,
+    state.moves,
+    state.recyclesUsed,
+    state.won ? 1 : 0
+  ];
+}
+
+function unpackHistorySnapshot(packed, config) {
+  if (!Array.isArray(packed) || packed.length !== 8) throw new Error('Invalid packed snapshot');
+  const [stock, waste, tableau, foundations, score, moves, recyclesUsed, won] = packed;
+  if (!Array.isArray(stock) || !Array.isArray(waste) || !Array.isArray(tableau) || tableau.length !== 7) throw new Error('Invalid packed piles');
+  if (!Array.isArray(foundations) || foundations.length !== SUITS.length || foundations.some((pile) => !Array.isArray(pile))) throw new Error('Invalid packed foundations');
+  if (!Number.isFinite(score) || !Number.isInteger(moves) || moves < 0 || !Number.isInteger(recyclesUsed) || recyclesUsed < 0 || (won !== 0 && won !== 1)) throw new Error('Invalid packed counters');
+
+  const restored = {
+    config: { ...normalizeConfig(config) },
+    stock: stock.map(unpackCard),
+    waste: waste.map(unpackCard),
+    tableau: tableau.map((column) => column.map(unpackCard)),
+    foundations: Object.fromEntries(SUITS.map((suit, index) => [suit, foundations[index].map(unpackCard)])),
+    score,
+    moves,
+    recyclesUsed,
+    won: won === 1
+  };
+  if (!validateState(restored)) throw new Error('Invalid packed state');
+  return restored;
+}
+
 function snapshot(state) {
   return cloneCoreState(state);
 }
@@ -397,10 +446,10 @@ export function autoFinish(state, onStep = null) {
 
 export function serializeGame(state) {
   return JSON.stringify({
-    version: 1,
+    version: 2,
     state: cloneCoreState(state),
     undosUsed: state.undosUsed,
-    history: state.history.map((item) => cloneCoreState(item))
+    history: state.history.map(packHistorySnapshot)
   });
 }
 
@@ -408,14 +457,31 @@ export function deserializeGame(serialized) {
   let payload;
   try {
     payload = typeof serialized === 'string' ? JSON.parse(serialized) : serialized;
-    if (!payload || payload.version !== 1 || !payload.state) return null;
-    const candidate = {
+    if (!payload || (payload.version !== 1 && payload.version !== 2) || !payload.state) return null;
+
+    const config = normalizeConfig(payload.state.config);
+    const current = cloneCoreState({ ...payload.state, config });
+    if (!validateState(current)) return null;
+
+    let history = [];
+    if (Array.isArray(payload.history)) {
+      if (payload.version === 2) {
+        history = payload.history.map((item) => unpackHistorySnapshot(item, config));
+      } else {
+        history = payload.history.map((item) => {
+          const restored = cloneCoreState({ ...item, config: normalizeConfig(item.config ?? config) });
+          if (!validateState(restored)) throw new Error('Invalid legacy history');
+          return restored;
+        });
+      }
+    }
+
+    return {
       version: 1,
-      ...cloneCoreState({ ...payload.state, config: normalizeConfig(payload.state.config) }),
+      ...current,
       undosUsed: Number.isInteger(payload.undosUsed) && payload.undosUsed >= 0 ? payload.undosUsed : 0,
-      history: Array.isArray(payload.history) ? payload.history.map((item) => cloneCoreState({ ...item, config: normalizeConfig(item.config) })) : []
+      history
     };
-    return validateState(candidate) ? candidate : null;
   } catch {
     return null;
   }
