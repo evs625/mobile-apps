@@ -19,7 +19,7 @@ import {
   undo
 } from './engine.js';
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 const STORAGE = Object.freeze({
   preferences: 'solitaire:v1:preferences',
   session: 'solitaire:v1:session',
@@ -60,6 +60,7 @@ let preferences = loadJson(STORAGE.preferences, DEFAULT_CONFIG);
 preferences = normalizeConfig(preferences);
 let stats = normalizeStats(loadJson(STORAGE.stats, {}));
 let game = null;
+let gameGeneration = 0;
 let selectedSource = null;
 let elapsedBaseMs = 0;
 let timerStartedAt = null;
@@ -126,11 +127,12 @@ function pauseTimer() {
 
 function saveSession() {
   if (!game || game.won) return;
-  saveJson(STORAGE.session, {
-    version: 1,
-    game: JSON.parse(serializeGame(game)),
-    elapsedMs: elapsedNow()
-  });
+  try {
+    const serializedGame = serializeGame(game);
+    localStorage.setItem(STORAGE.session, `{"version":1,"elapsedMs":${elapsedNow()},"game":${serializedGame}}`);
+  } catch {
+    // Storage can be unavailable or full; gameplay continues in memory.
+  }
 }
 
 function clearSession() {
@@ -146,6 +148,7 @@ function restoreSession() {
     return false;
   }
   game = restored;
+  gameGeneration += 1;
   elapsedBaseMs = Number.isFinite(payload.elapsedMs) && payload.elapsedMs >= 0 ? payload.elapsedMs : 0;
   timerStartedAt = null;
   return true;
@@ -285,9 +288,14 @@ function renderFoundations() {
     $$('.card', pile).forEach((card) => card.remove());
     const top = game.foundations[suit].at(-1);
     if (top) {
+      pile.setAttribute('role', 'group');
+      pile.removeAttribute('tabindex');
       const element = makeCardFace(top);
       attachSource(element, { type: 'foundation', suit });
       pile.append(element);
+    } else {
+      pile.setAttribute('role', 'button');
+      pile.tabIndex = 0;
     }
     pile.setAttribute('aria-label', `${suit[0].toUpperCase() + suit.slice(1)} foundation, ${game.foundations[suit].length} cards`);
   }
@@ -312,6 +320,13 @@ function renderTableau() {
 
     const requiredHeight = cards.length ? top + metrics.height + 12 : metrics.height + 12;
     columnElement.style.minHeight = `${Math.max(150, requiredHeight)}px`;
+    if (cards.length > 0) {
+      columnElement.setAttribute('role', 'group');
+      columnElement.removeAttribute('tabindex');
+    } else {
+      columnElement.setAttribute('role', 'button');
+      columnElement.tabIndex = 0;
+    }
     columnElement.setAttribute('aria-label', `Tableau column ${columnIndex + 1}, ${cards.length} cards`);
   }
 }
@@ -321,6 +336,8 @@ function renderHud() {
   movesValue.textContent = game ? String(game.moves) : '0';
   timeValue.textContent = formatTime(game ? elapsedNow() : 0);
   undoButton.disabled = !game || game.won || autoFinishing || !canUndo(game);
+  newGameButton.disabled = autoFinishing;
+  menuButton.disabled = autoFinishing;
   const showFinish = Boolean(game && !game.won && game.config.autoFinish === 'button' && canAutoFinish(game));
   autoFinishButton.hidden = !showFinish;
   autoFinishButton.disabled = autoFinishing;
@@ -565,6 +582,7 @@ tableauColumns.forEach((column) => {
     handleDestinationTableau(Number(column.dataset.column));
   });
   column.addEventListener('keydown', (event) => {
+    if (event.target !== column) return;
     if ((event.key === 'Enter' || event.key === ' ') && selectedSource) {
       event.preventDefault();
       handleDestinationTableau(Number(column.dataset.column));
@@ -578,6 +596,7 @@ foundationPiles.forEach((pile) => {
     handleDestinationFoundation(pile.dataset.foundation);
   });
   pile.addEventListener('keydown', (event) => {
+    if (event.target !== pile) return;
     if ((event.key === 'Enter' || event.key === ' ') && selectedSource) {
       event.preventDefault();
       handleDestinationFoundation(pile.dataset.foundation);
@@ -593,33 +612,39 @@ undoButton.addEventListener('click', () => {
 autoFinishButton.addEventListener('click', () => runAutoFinish());
 
 async function runAutoFinish() {
-  if (!game || game.won || autoFinishing || !canAutoFinish(game)) return;
+  const targetGame = game;
+  const generation = gameGeneration;
+  if (!targetGame || targetGame.won || autoFinishing || !canAutoFinish(targetGame)) return;
+  const isCurrent = () => game === targetGame && gameGeneration === generation;
+
   autoFinishing = true;
   selectedSource = null;
   renderHud();
 
   let safety = 0;
-  while (!game.won && safety < 52) {
+  while (isCurrent() && !targetGame.won && safety < 52) {
     safety += 1;
     let source = null;
     for (let column = 0; column < 7; column += 1) {
-      const cards = game.tableau[column];
+      const cards = targetGame.tableau[column];
       if (!cards.length) continue;
       const candidate = { type: 'tableau', column, index: cards.length - 1 };
-      if (canMoveToFoundation(game, candidate)) {
+      if (canMoveToFoundation(targetGame, candidate)) {
         source = candidate;
         break;
       }
     }
     if (!source) break;
-    moveToFoundation(game, source);
+    moveToFoundation(targetGame, source);
+    if (!isCurrent()) return;
     render();
     await delay(85);
   }
 
+  if (!isCurrent()) return;
   autoFinishing = false;
   render();
-  if (game.won) finishWin();
+  if (targetGame.won) finishWin();
   else saveSession();
 }
 
@@ -671,6 +696,7 @@ function openSettings(mode = 'new', force = false) {
 }
 
 function requestNewGame() {
+  if (autoFinishing) return;
   if (game && !game.won && game.moves > 0) {
     const abandon = window.confirm('Abandon the current game and start a new deal?');
     if (!abandon) return;
@@ -693,6 +719,7 @@ function startNewGame(config) {
   pauseTimer();
   preferences = normalizeConfig(config);
   saveJson(STORAGE.preferences, preferences);
+  gameGeneration += 1;
   game = newGame(preferences, secureRandom);
   selectedSource = null;
   elapsedBaseMs = 0;
