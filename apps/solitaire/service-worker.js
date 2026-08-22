@@ -1,4 +1,4 @@
-const CACHE_NAME = 'solitaire-v1.0.0';
+const CACHE_NAME = 'solitaire-v1.0.1';
 const CACHE_PREFIX = 'solitaire-';
 const APP_SHELL = [
   './',
