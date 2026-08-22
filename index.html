@@ -60,6 +60,7 @@
     .app-card:hover { transform: translateY(-3px); box-shadow: 0 22px 60px rgba(15, 23, 42, .13); }
     .app-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
     .icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 18px; background: #111827; color: white; font-size: 1.5rem; font-weight: 800; }
+    .solitaire-icon { background: #0b5a36; color: #f8fafc; font-size: 1.8rem; }
     .particle-icon { background: conic-gradient(#ff4d4d, #ffe14d, #4dff88, #4dd9ff, #7654ff, #ff4dc4, #ff4d4d); color: #05070b; box-shadow: inset 0 0 0 8px rgba(0, 0, 0, .7); }
     .catchum-icon { border: 1px solid #65d65d; background: #020503; color: #b8ff9f; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .app-copy p { margin: 7px 0 0; color: var(--muted); line-height: 1.5; }
@@ -107,6 +108,7 @@
         --tag: #182338;
       }
       .icon { background-color: #f8fafc; color: #111827; }
+      .solitaire-icon { background-color: #0b5a36; color: #f8fafc; }
       .particle-icon { color: #05070b; }
       .catchum-icon { background-color: #020503; color: #b8ff9f; }
       .tag, .number { color: #cbd5e1; }
@@ -129,6 +131,21 @@
           <span class="meta">
             <span class="tag">PWA</span>
             <span class="tag">Offline after first load</span>
+            <span class="tag">No dependencies</span>
+          </span>
+        </span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a class="app-card" href="./apps/solitaire/">
+        <span class="icon solitaire-icon" aria-hidden="true">♠</span>
+        <span class="app-copy">
+          <h2>Classic Solitaire</h2>
+          <p>Phone-first Klondike with configurable draw, redeal and undo rules, drag or tap controls, scoring, statistics, and exact game resume.</p>
+          <span class="meta">
+            <span class="tag">PWA</span>
+            <span class="tag">Offline after first load</span>
+            <span class="tag">Touch optimized</span>
             <span class="tag">No dependencies</span>
           </span>
         </span>
