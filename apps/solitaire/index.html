@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b5a36">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Classic Klondike Solitaire for phones, playable offline.">
+  <title>Solitaire</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Solitaire">
+        <span class="brand-mark" aria-hidden="true">♠</span>
+        <span>Solitaire</span>
+      </div>
+
+      <div class="hud" aria-label="Game status">
+        <span><b id="scoreValue">0</b><small>Score</small></span>
+        <span><b id="movesValue">0</b><small>Moves</small></span>
+        <span><b id="timeValue">0:00</b><small>Time</small></span>
+      </div>
+
+      <div class="toolbar">
+        <button id="newGameButton" class="tool-button" type="button">New</button>
+        <button id="undoButton" class="tool-button" type="button" disabled>Undo</button>
+        <button id="autoFinishButton" class="tool-button" type="button" hidden>Finish</button>
+        <button id="menuButton" class="tool-button icon-button" type="button" aria-label="Open menu">⋮</button>
+      </div>
+    </header>
+
+    <main id="gameBoard" class="game-board" aria-label="Klondike Solitaire board">
+      <section class="top-piles" aria-label="Stock, waste, and foundations">
+        <button id="stockPile" class="pile stock-pile" type="button" aria-label="Stock"></button>
+        <div id="wastePile" class="pile waste-pile" aria-label="Waste"></div>
+        <div class="top-spacer" aria-hidden="true"></div>
+        <div class="pile foundation-pile" data-foundation="clubs" tabindex="0" role="button" aria-label="Clubs foundation"><span aria-hidden="true">♣</span></div>
+        <div class="pile foundation-pile red-placeholder" data-foundation="diamonds" tabindex="0" role="button" aria-label="Diamonds foundation"><span aria-hidden="true">♦</span></div>
+        <div class="pile foundation-pile red-placeholder" data-foundation="hearts" tabindex="0" role="button" aria-label="Hearts foundation"><span aria-hidden="true">♥</span></div>
+        <div class="pile foundation-pile" data-foundation="spades" tabindex="0" role="button" aria-label="Spades foundation"><span aria-hidden="true">♠</span></div>
+      </section>
+
+      <section id="tableau" class="tableau" aria-label="Tableau">
+        <div class="tableau-column" data-column="0" tabindex="0" role="button" aria-label="Tableau column 1"></div>
+        <div class="tableau-column" data-column="1" tabindex="0" role="button" aria-label="Tableau column 2"></div>
+        <div class="tableau-column" data-column="2" tabindex="0" role="button" aria-label="Tableau column 3"></div>
+        <div class="tableau-column" data-column="3" tabindex="0" role="button" aria-label="Tableau column 4"></div>
+        <div class="tableau-column" data-column="4" tabindex="0" role="button" aria-label="Tableau column 5"></div>
+        <div class="tableau-column" data-column="5" tabindex="0" role="button" aria-label="Tableau column 6"></div>
+        <div class="tableau-column" data-column="6" tabindex="0" role="button" aria-label="Tableau column 7"></div>
+      </section>
+    </main>
+
+    <div id="statusMessage" class="sr-only" role="status" aria-live="polite"></div>
+  </div>
+
+  <dialog id="settingsDialog" class="sheet settings-sheet">
+    <form id="settingsForm" method="dialog">
+      <div class="sheet-header">
+        <div>
+          <p class="eyebrow" id="settingsEyebrow">New deal</p>
+          <h1 id="settingsTitle">New Game</h1>
+        </div>
+        <button id="settingsClose" class="close-button" type="button" aria-label="Close settings">×</button>
+      </div>
+
+      <div class="settings-grid">
+        <fieldset>
+          <legend>Cards from stock</legend>
+          <div class="segmented two">
+            <label><input type="radio" name="drawCount" value="1"><span>Draw 1</span></label>
+            <label><input type="radio" name="drawCount" value="3"><span>Draw 3</span></label>
+          </div>
+        </fieldset>
+
+        <label class="field-label" for="recycleLimit">Stock redeals
+          <select id="recycleLimit" name="recycleLimit">
+            <option value="0">No redeals</option>
+            <option value="1">1 redeal</option>
+            <option value="2">2 redeals</option>
+            <option value="3">3 redeals</option>
+            <option value="-1">Unlimited</option>
+          </select>
+        </label>
+
+        <label class="field-label" for="undoLimit">Undo allowance
+          <select id="undoLimit" name="undoLimit">
+            <option value="0">None</option>
+            <option value="1">1 undo</option>
+            <option value="3">3 undos</option>
+            <option value="5">5 undos</option>
+            <option value="10">10 undos</option>
+            <option value="-1">Unlimited</option>
+          </select>
+        </label>
+
+        <fieldset>
+          <legend>Card controls</legend>
+          <div class="segmented three">
+            <label><input type="radio" name="controlMode" value="drag"><span>Drag</span></label>
+            <label><input type="radio" name="controlMode" value="tap"><span>Tap</span></label>
+            <label><input type="radio" name="controlMode" value="both"><span>Both</span></label>
+          </div>
+          <p class="help">Drag uses proximity snapping. Double-tap sends an available card to its foundation.</p>
+        </fieldset>
+
+        <label class="field-label" for="autoFinishMode">Auto-finish
+          <select id="autoFinishMode" name="autoFinish">
+            <option value="off">Off</option>
+            <option value="button">Show Finish button when safe</option>
+            <option value="automatic">Finish automatically when safe</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="scoring-note">
+        <strong>Classic score</strong>
+        <span>+5 waste→tableau · +10 foundation · +5 reveal · −15 foundation→tableau</span>
+      </div>
+
+      <p id="settingsNotice" class="settings-notice" hidden>These choices apply to the next deal. The current game keeps its rules.</p>
+
+      <div class="sheet-actions">
+        <button id="settingsCancel" class="secondary-button" type="button">Cancel</button>
+        <button id="settingsPrimary" class="primary-button" type="submit">Deal</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="menuDialog" class="sheet menu-sheet">
+    <div class="sheet-header">
+      <div>
+        <p class="eyebrow">Solitaire</p>
+        <h2>Menu</h2>
+      </div>
+      <button id="menuClose" class="close-button" type="button" aria-label="Close menu">×</button>
+    </div>
+    <div class="menu-actions">
+      <button id="menuNewGame" type="button">New Game</button>
+      <button id="menuSettings" type="button">Settings for Next Game</button>
+      <button id="menuStats" type="button">Statistics</button>
+    </div>
+    <p class="version">Version <span id="versionValue">1.0.0</span></p>
+  </dialog>
+
+  <dialog id="statsDialog" class="sheet stats-sheet">
+    <div class="sheet-header">
+      <div>
+        <p class="eyebrow">On this device</p>
+        <h2>Statistics</h2>
+      </div>
+      <button id="statsClose" class="close-button" type="button" aria-label="Close statistics">×</button>
+    </div>
+    <dl class="stats-grid">
+      <div><dt>Games</dt><dd id="statsGames">0</dd></div>
+      <div><dt>Wins</dt><dd id="statsWins">0</dd></div>
+      <div><dt>Win rate</dt><dd id="statsRate">0%</dd></div>
+      <div><dt>Best score</dt><dd id="statsScore">—</dd></div>
+      <div><dt>Fewest moves</dt><dd id="statsMoves">—</dd></div>
+      <div><dt>Fastest win</dt><dd id="statsTime">—</dd></div>
+    </dl>
+    <button id="statsDone" class="primary-button full" type="button">Done</button>
+  </dialog>
+
+  <dialog id="winDialog" class="sheet win-sheet">
+    <div class="win-symbol" aria-hidden="true">♠ ♥ ♣ ♦</div>
+    <p class="eyebrow">Complete</p>
+    <h2>You won</h2>
+    <div class="win-results">
+      <span><b id="winScore">0</b><small>Score</small></span>
+      <span><b id="winMoves">0</b><small>Moves</small></span>
+      <span><b id="winTime">0:00</b><small>Time</small></span>
+    </div>
+    <button id="winNewGame" class="primary-button full" type="button">New Game</button>
+  </dialog>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
