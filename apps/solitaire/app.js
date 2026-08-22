@@ -19,7 +19,7 @@ import {
   undo
 } from './engine.js';
 
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.2';
 const STORAGE = Object.freeze({
   preferences: 'solitaire:v1:preferences',
   session: 'solitaire:v1:session',
@@ -169,17 +169,29 @@ function cardAria(card) {
   return `${rank} of ${suit}`;
 }
 
+function cardFaceMarkup(card) {
+  const symbol = SUIT_SYMBOLS[card.suit];
+  const rank = rankText(card.rank);
+  return `
+    <span class="corner"><span>${rank}</span><span class="suit">${symbol}</span></span>
+    <span class="center-suit" aria-hidden="true">${symbol}</span>
+    <span class="corner bottom" aria-hidden="true"><span>${rank}</span><span class="suit">${symbol}</span></span>`;
+}
+
 function makeCardFace(card, className = 'card') {
   const element = document.createElement('button');
   element.type = 'button';
   element.className = `${className} ${cardColor(card) === 'red' ? 'red' : ''}`.trim();
   element.setAttribute('aria-label', cardAria(card));
-  const symbol = SUIT_SYMBOLS[card.suit];
-  const rank = rankText(card.rank);
-  element.innerHTML = `
-    <span class="corner"><span>${rank}</span><span class="suit">${symbol}</span></span>
-    <span class="center-suit" aria-hidden="true">${symbol}</span>
-    <span class="corner bottom" aria-hidden="true"><span>${rank}</span><span class="suit">${symbol}</span></span>`;
+  element.innerHTML = cardFaceMarkup(card);
+  return element;
+}
+
+function makeStaticCardFace(card, className = 'card') {
+  const element = document.createElement('div');
+  element.className = `${className} ${cardColor(card) === 'red' ? 'red' : ''}`.trim();
+  element.setAttribute('aria-hidden', 'true');
+  element.innerHTML = cardFaceMarkup(card);
   return element;
 }
 
@@ -275,11 +287,26 @@ function renderStock() {
 
 function renderWaste() {
   wastePile.replaceChildren();
-  const top = game.waste.at(-1);
-  if (!top) return;
-  const element = makeCardFace(top);
-  attachSource(element, { type: 'waste' });
-  wastePile.append(element);
+  const visibleCount = Math.min(game.config.drawCount, game.waste.length);
+  if (visibleCount === 0) {
+    wastePile.setAttribute('aria-label', 'Waste empty');
+    return;
+  }
+
+  const visibleCards = game.waste.slice(-visibleCount);
+  const pileWidth = wastePile.getBoundingClientRect().width || layoutMetrics().width;
+  const fanGap = game.config.drawCount === 3 ? Math.max(8, Math.min(18, pileWidth * 0.18)) : 0;
+
+  visibleCards.forEach((card, index) => {
+    const isTop = index === visibleCards.length - 1;
+    const element = isTop ? makeCardFace(card) : makeStaticCardFace(card);
+    element.style.transform = `translateX(${index * fanGap}px)`;
+    element.style.zIndex = String(index + 1);
+    if (isTop) attachSource(element, { type: 'waste' });
+    wastePile.append(element);
+  });
+
+  wastePile.setAttribute('aria-label', `Waste, ${game.waste.length} cards. Top card ${cardAria(visibleCards.at(-1))}.`);
 }
 
 function renderFoundations() {
@@ -445,6 +472,20 @@ function onCardPointerDown(event) {
   event.currentTarget.setPointerCapture?.(event.pointerId);
 }
 
+function dragSourceElements(state) {
+  if (!state?.source) return [];
+  if (state.source.type === 'tableau') {
+    return $$('.card', tableauColumns[state.source.column]).slice(state.source.index);
+  }
+  return state.element ? [state.element] : [];
+}
+
+function setDragSourceHidden(state, hidden) {
+  for (const element of dragSourceElements(state)) {
+    element.style.visibility = hidden ? 'hidden' : '';
+  }
+}
+
 function makeGhost(source) {
   const cards = sourceCards(source);
   const rect = dragState.element.getBoundingClientRect();
@@ -519,7 +560,7 @@ window.addEventListener('pointermove', (event) => {
   if (!dragState.dragging && dragState.allowDrag && distance >= 6) {
     dragState.dragging = true;
     dragState.ghost = makeGhost(dragState.source);
-    dragState.element.style.opacity = '.2';
+    setDragSourceHidden(dragState, true);
   }
 
   if (dragState.dragging) {
@@ -536,7 +577,7 @@ window.addEventListener('pointerup', (event) => {
   if (current.dragging) {
     const target = findSnapTarget(current.source, event.clientX, event.clientY);
     current.ghost?.remove();
-    current.element.style.opacity = '';
+    setDragSourceHidden(current, false);
     clearSnapTarget();
     dragState = null;
 
@@ -562,8 +603,9 @@ window.addEventListener('pointerup', (event) => {
 
 window.addEventListener('pointercancel', () => {
   if (!dragState) return;
-  dragState.ghost?.remove();
-  if (dragState.element) dragState.element.style.opacity = '';
+  const current = dragState;
+  current.ghost?.remove();
+  setDragSourceHidden(current, false);
   dragState = null;
   clearSnapTarget();
   render();
