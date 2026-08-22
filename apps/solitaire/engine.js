@@ -100,7 +100,7 @@ function packHistorySnapshot(state) {
   ];
 }
 
-function unpackHistorySnapshot(packed, config) {
+function unpackHistorySnapshot(packed, config, validate = true) {
   if (!Array.isArray(packed) || packed.length !== 8) throw new Error('Invalid packed snapshot');
   const [stock, waste, tableau, foundations, score, moves, recyclesUsed, won] = packed;
   if (!Array.isArray(stock) || !Array.isArray(waste) || !Array.isArray(tableau) || tableau.length !== 7) throw new Error('Invalid packed piles');
@@ -118,16 +118,16 @@ function unpackHistorySnapshot(packed, config) {
     recyclesUsed,
     won: won === 1
   };
-  if (!validateState(restored)) throw new Error('Invalid packed state');
+  if (validate && !validateState(restored)) throw new Error('Invalid packed state');
   return restored;
 }
 
 function snapshot(state) {
-  return cloneCoreState(state);
+  return packHistorySnapshot(state);
 }
 
 function restoreFromSnapshot(state, prior) {
-  const restored = cloneCoreState(prior);
+  const restored = unpackHistorySnapshot(prior, state.config, false);
   state.config = restored.config;
   state.stock = restored.stock;
   state.waste = restored.waste;
@@ -449,7 +449,7 @@ export function serializeGame(state) {
     version: 2,
     state: cloneCoreState(state),
     undosUsed: state.undosUsed,
-    history: state.history.map(packHistorySnapshot)
+    history: state.history
   });
 }
 
@@ -466,12 +466,12 @@ export function deserializeGame(serialized) {
     let history = [];
     if (Array.isArray(payload.history)) {
       if (payload.version === 2) {
-        history = payload.history.map((item) => unpackHistorySnapshot(item, config));
+        history = payload.history.map((item) => packHistorySnapshot(unpackHistorySnapshot(item, config)));
       } else {
         history = payload.history.map((item) => {
           const restored = cloneCoreState({ ...item, config: normalizeConfig(item.config ?? config) });
           if (!validateState(restored)) throw new Error('Invalid legacy history');
-          return restored;
+          return packHistorySnapshot(restored);
         });
       }
     }
