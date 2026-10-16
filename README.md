@@ -18,6 +18,8 @@ A build-free repository for small, modern HTML applications that work on phones 
 - [Particle System Lab](./apps/particle-system/) — configurable WebGL2 particle simulation with deterministic presets, persistent settings, and offline support.
 - [CatChum Mobile](./apps/catchum-mobile/) — landscape terminal-style maze game with calibrated tilt, touch, and keyboard controls, alternating two-player mode, local high scores, and offline support.
 
+- [Morlet Wavelet 3D](./apps/morlet-wavelet/) — rotating, interactive complex Morlet wavelet with Gaussian envelope, projected waveforms, touch controls, and installable offline PWA support.
+
 ## Ways to use an app
 
 The repository publishes live web applications. The following are launch methods for the same code, not separate application versions:
