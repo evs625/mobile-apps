@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Offline-capable interactive 3D Morlet wavelet visualization with rotating camera and complex-valued projections.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<title>Morlet Wavelet · Reference-Based 3D Viewer</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main>
+<header>
+ <div>
+  <div class="eyebrow">Mathematical visualization · reconstructed from original video frames</div>
+  <h1>Complex Morlet wavelet in 3D</h1>
+  <div class="subtitle">A Gaussian-tapered complex helix with its real/imaginary projections. Drag to rotate · wheel/pinch to zoom.</div>
+ </div>
+ <div class="buttons"><button id="toggle" class="active">Pause rotation</button><button id="reset">Reference view</button><button id="export">Save PNG</button></div>
+</header>
+<div class="layout">
+ <div class="figure">
+   <div class="figure-top">MORLET WAVELET · 3D PARAMETRIC RIBBON</div>
+   <canvas id="view" role="img" aria-label="Interactive three-dimensional Gaussian-tapered Morlet wavelet helical surface, projections on coordinate planes"></canvas>
+   <div class="figure-note">Drag to orbit · Scroll/pinch to zoom · Arrow keys to rotate</div>
+ </div>
+ <aside class="panel">
+  <h2>Wavelet parameters</h2>
+  <div class="tiny">The original video contains a stationary 3D wavelet and rotating camera. This recreates that construction, rather than a wavelet transform spectrogram.</div>
+  <div class="formrow"><label for="cycles">Oscillations <output id="cyclesText">5.5</output></label><input type="range" id="cycles" min="3" max="9" step=".25" value="5.5"></div>
+  <div class="formrow"><label for="sigma">Gaussian width σ <output id="sigmaText">1.35</output></label><input type="range" id="sigma" min=".65" max="2.5" step=".05" value="1.35"></div>
+  <div class="formrow"><label for="phase">Phase angle <output id="phaseText">0°</output></label><input type="range" id="phase" min="0" max="360" step="5" value="0"></div>
+  <div class="formrow"><label for="opacity">Ribbon opacity <output id="opacityText">27%</output></label><input type="range" id="opacity" min="5" max="80" step="1" value="27"></div>
+  <label class="switch"><input id="projections" type="checkbox" checked>Plane projections</label>
+  <label class="switch"><input id="envelopes" type="checkbox" checked>Gaussian envelopes</label>
+  <label class="switch"><input id="grid" type="checkbox" checked>Light gray reference grids</label>
+  <hr>
+  <div class="formula">ψ(t) = exp(−t² / 2σ²) · exp(iωt)</div>
+  <div class="tiny">3D ribbon: (t, r·Re ψ(t), r·Im ψ(t)), 0 ≤ r ≤ 1. The planar curves are orthogonal projections of ψ.</div>
+  <div class="legend">
+    <div><span class="legend-line" style="background:#aaa0df"></span>Complex oscillation and projections</div>
+    <div><span class="legend-line" style="background:#ec8392"></span>Gaussian envelope</div>
+    <div><span class="legend-line" style="background:#1e1e23"></span>Time axis</div>
+  </div>
+  <hr>
+  <div class="tiny">Reference: “Morlet Wavelet”, Lukasz Wiklendt, YouTube Short 5iEHI1A8AlY. Reconstructed from 3 true I-frames and 4 sampled frames. Exact source code / plot settings are not available.</div>
+ </aside>
+</div>
+<div class="footer">Standalone HTML · no internet or WebGL required · all geometry rendered locally in Canvas 2D.</div>
+</main>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
